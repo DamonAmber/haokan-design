@@ -1,0 +1,758 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>Haokan · 设计资产库</title>
+<link rel="icon" href="/icon.svg"/>
+<style>
+  /* ===== Haokan · Apple Liquid Glass（深色）===== */
+  :root{
+    --bg:#0b0b0f;
+    --fg:#f5f5f7;
+    --muted:rgba(235,235,245,.60);
+    --fg3:rgba(235,235,245,.30);
+    --accent:#0a84ff; --accent-press:#409cff;
+    --ink:#0a84ff;                 /* 兼容旧引用：主色=系统蓝 */
+    --ring:rgba(10,132,255,.35);
+    --red:#ff453a; --amber:#ff9f0a; --green:#30d158;
+    --line:rgba(255,255,255,.10); --line-strong:rgba(255,255,255,.18);
+    --panel:rgba(28,28,32,.66);    /* 兼容旧引用：内容表面 */
+    --glass:rgba(24,24,28,.55); --glass-2:rgba(24,24,28,.72);
+    --fill:rgba(120,120,128,.20); --fill-2:rgba(120,120,128,.34);
+    --radius:12px; --radius-lg:20px; --pill:980px; --btn-h:38px;
+    --blur:saturate(180%) blur(30px);
+    --hair:inset 0 1px 0 rgba(255,255,255,.12);
+    --shadow:0 10px 30px rgba(0,0,0,.42);
+    --shadow-lg:0 30px 80px rgba(0,0,0,.6);
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;height:100%}
+  body{background:var(--bg);color:var(--fg);font-family:-apple-system,"SF Pro Text","SF Pro Display","Helvetica Neue","PingFang SC","Microsoft YaHei",sans-serif;line-height:1.5;-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility}
+  body::before{content:"";position:fixed;inset:0;z-index:-1;pointer-events:none;background:
+    radial-gradient(70vw 52vw at 12% -8%, rgba(10,132,255,.16), transparent 55%),
+    radial-gradient(60vw 50vw at 102% 8%, rgba(191,90,242,.12), transparent 55%),
+    radial-gradient(66vw 60vw at 50% 118%, rgba(48,209,88,.07), transparent 55%);}
+  html.is-electron body{background:rgba(11,11,15,.5)}
+  a{color:inherit}
+  code{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:.92em}
+  ::selection{background:rgba(10,132,255,.35)}
+  ::-webkit-scrollbar{width:11px;height:11px}
+  ::-webkit-scrollbar-thumb{background:rgba(255,255,255,.16);border-radius:99px;border:3px solid transparent;background-clip:padding-box}
+  ::-webkit-scrollbar-thumb:hover{background:rgba(255,255,255,.26);background-clip:padding-box}
+
+  .topbar{position:sticky;top:0;z-index:20;background:var(--glass);backdrop-filter:var(--blur);-webkit-backdrop-filter:var(--blur);border-bottom:1px solid var(--line);box-shadow:var(--hair);-webkit-app-region:drag}
+  .topbar input,.topbar .btn,.topbar .brandico,.filters{-webkit-app-region:no-drag}
+  .topbar-inner{max-width:1280px;margin:0 auto;padding:15px 22px;display:flex;align-items:center;gap:14px}
+  html.is-electron .topbar-inner{padding-top:22px;padding-bottom:15px;padding-left:94px}
+  .brand{font-weight:700;font-size:17px;letter-spacing:-.02em;white-space:nowrap;display:flex;align-items:center;color:var(--fg)}
+  .brandico{width:26px;height:26px;border-radius:8px;margin-right:10px;box-shadow:0 1px 4px rgba(0,0,0,.5)}
+  .brandsub{font-weight:500;font-size:13px;color:var(--muted);margin-left:11px;padding-left:11px;border-left:1px solid var(--line)}
+  .search{flex:1;min-width:120px}
+  .search input{width:100%;height:var(--btn-h);padding:0 14px;border:1px solid transparent;border-radius:10px;background:var(--fill);font-size:14px;color:var(--fg);transition:.15s}
+  .search input::placeholder{color:var(--fg3)}
+  .search input:focus{outline:none;background:var(--fill-2);box-shadow:0 0 0 4px var(--ring)}
+
+  .btn{height:var(--btn-h);display:inline-flex;align-items:center;justify-content:center;gap:6px;border:1px solid var(--line);background:var(--fill);color:var(--fg);padding:0 15px;border-radius:10px;font-size:14px;font-weight:500;cursor:pointer;white-space:nowrap;line-height:1;transition:.15s;-webkit-app-region:no-drag}
+  .btn:hover{background:var(--fill-2)}
+  .btn.primary{background:var(--accent);color:#fff;border-color:transparent;box-shadow:0 2px 12px rgba(10,132,255,.42)}
+  .btn.primary:hover{background:var(--accent-press)}
+  .btn.danger{background:transparent;color:var(--red);border-color:rgba(255,69,58,.42)}
+  .btn.danger:hover{background:var(--red);color:#fff;border-color:var(--red)}
+
+  .filters{max-width:1280px;margin:0 auto;padding:0 22px 16px;display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+  .chip{border:1px solid var(--line);background:var(--fill);padding:6px 13px;border-radius:var(--pill);font-size:13px;color:var(--muted);cursor:pointer;user-select:none;transition:.15s}
+  .chip:hover{color:var(--fg);background:var(--fill-2)}
+  .chip.active{background:rgba(255,255,255,.92);color:#0b0b0f;border-color:transparent;font-weight:600}
+  .count{color:var(--fg3);font-size:13px;margin-left:auto}
+
+  .grid{max-width:1280px;margin:0 auto;padding:22px 22px 120px;display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:20px}
+  .card{position:relative;background:var(--panel);border:1px solid var(--line);border-radius:var(--radius-lg);overflow:hidden;cursor:pointer;transition:transform .2s cubic-bezier(.2,.7,.2,1),box-shadow .2s,border-color .2s;display:flex;flex-direction:column;box-shadow:var(--hair)}
+  .card:hover{transform:translateY(-4px);box-shadow:0 22px 46px -20px rgba(0,0,0,.75),var(--hair);border-color:var(--line-strong)}
+  .card.selected{border-color:var(--accent);box-shadow:0 0 0 3px rgba(10,132,255,.5)}
+  .cover{aspect-ratio:16/10;background:rgba(255,255,255,.04);overflow:hidden;border-bottom:1px solid var(--line)}
+  .cover img{width:100%;height:100%;object-fit:cover;object-position:top;display:block}
+  .cover.empty{display:flex;align-items:center;justify-content:center;color:var(--fg3);font-size:13px}
+  .card-ov{position:absolute;top:10px;left:10px;right:10px;display:flex;justify-content:space-between;z-index:2}
+  .checkbox{width:24px;height:24px;border-radius:8px;border:1.5px solid rgba(255,255,255,.85);background:rgba(0,0,0,.4);backdrop-filter:blur(6px);cursor:pointer;display:flex;align-items:center;justify-content:center;color:#fff;font-size:14px;opacity:0;transition:.12s}
+  .card:hover .checkbox,.card.selected .checkbox{opacity:1}
+  .card.selected .checkbox{background:var(--accent);border-color:var(--accent)}
+  .star{width:24px;height:24px;border-radius:8px;background:rgba(0,0,0,.4);backdrop-filter:blur(6px);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:14px;color:#fff;opacity:0;transition:.12s}
+  .card:hover .star,.star.on{opacity:1}
+  .star.on{color:#ffd60a}
+  .card-body{padding:15px 16px 16px}
+  .card-head{display:flex;align-items:center;gap:8px;margin-bottom:6px}
+  .cdot{width:12px;height:12px;border-radius:4px;flex:none;border:1px solid rgba(255,255,255,.14)}
+  .csource{font-weight:650;font-size:15px;letter-spacing:-.01em;color:var(--fg);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .oneliner{color:var(--muted);font-size:13px;margin:2px 0 12px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;min-height:38px;line-height:1.5}
+  .tags{display:flex;gap:6px;flex-wrap:wrap}
+  .tag{font-size:12px;color:var(--muted);background:var(--fill);border-radius:7px;padding:3px 9px}
+  .empty-state{max-width:1280px;margin:0 auto;padding:90px 24px;text-align:center;color:var(--muted)}
+  .empty-state h2{color:var(--fg);font-weight:650}
+
+  /* 选择工具栏（玻璃胶囊） */
+  .seltoolbar{position:fixed;left:50%;bottom:26px;transform:translateX(-50%) translateY(140%);z-index:40;background:var(--glass-2);backdrop-filter:var(--blur);-webkit-backdrop-filter:var(--blur);border:1px solid var(--line);color:var(--fg);border-radius:var(--pill);padding:9px 12px 9px 18px;display:flex;align-items:center;gap:10px;box-shadow:var(--shadow-lg),var(--hair);transition:transform .28s cubic-bezier(.2,.8,.2,1)}
+  .seltoolbar.show{transform:translateX(-50%) translateY(0)}
+  .seltoolbar .st-count{font-size:14px;font-weight:600;margin-right:4px}
+  .seltoolbar .tbtn{border:1px solid var(--line);background:var(--fill);color:var(--fg);padding:8px 14px;border-radius:var(--pill);font-size:13px;cursor:pointer;transition:.15s}
+  .seltoolbar .tbtn:hover{background:var(--fill-2)}
+  .seltoolbar .tbtn.danger{color:var(--red);border-color:rgba(255,69,58,.42)}
+  .seltoolbar .tbtn.danger:hover{background:var(--red);border-color:var(--red);color:#fff}
+
+  /* 详情浮层 */
+  .overlay{position:fixed;inset:0;z-index:50;background:rgba(0,0,0,.5);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);display:none;align-items:center;justify-content:center;padding:24px}
+  .overlay.show{display:flex}
+  .viewer{width:min(1120px,94vw);height:92vh;background:var(--glass-2);backdrop-filter:var(--blur);-webkit-backdrop-filter:var(--blur);border:1px solid var(--line);border-radius:var(--radius-lg);overflow:hidden;display:flex;flex-direction:column;box-shadow:var(--shadow-lg),var(--hair)}
+  .viewer-bar{display:flex;align-items:center;gap:8px;padding:12px 14px;border-bottom:1px solid var(--line);-webkit-app-region:no-drag}
+  .viewer-bar .vt{font-weight:650;flex:1;min-width:0;color:var(--fg);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;margin-right:8px}
+  .viewer iframe{flex:1;width:100%;border:0;background:#fff}
+  .icon-btn{height:34px;display:inline-flex;align-items:center;border:1px solid var(--line);background:var(--fill);border-radius:10px;padding:0 13px;font-size:13px;font-weight:500;cursor:pointer;color:var(--fg);flex:none;white-space:nowrap;line-height:1;transition:.15s;-webkit-app-region:no-drag}
+  .icon-btn:hover{background:var(--fill-2)}
+  .icon-btn.accent{background:var(--accent);color:#fff;border-color:transparent;box-shadow:0 2px 12px rgba(10,132,255,.42)}
+  .icon-btn.accent:hover{background:var(--accent-press)}
+
+  /* 通用弹窗 */
+  .modal{position:fixed;inset:0;z-index:60;background:rgba(0,0,0,.5);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);display:none;align-items:center;justify-content:center;padding:24px}
+  .modal.show{display:flex}
+  .dialog{width:min(560px,94vw);max-height:90vh;overflow:auto;background:var(--glass-2);backdrop-filter:var(--blur);-webkit-backdrop-filter:var(--blur);border:1px solid var(--line);border-radius:var(--radius-lg);padding:24px;color:var(--fg);box-shadow:var(--shadow-lg),var(--hair)}
+  .dialog.wide{width:min(1180px,96vw)}
+  .dialog h3{margin:0 0 6px;font-size:19px;font-weight:680;letter-spacing:-.01em}
+  .dialog p{margin:0 0 18px;color:var(--muted);font-size:13.5px;line-height:1.55}
+  .field{display:flex;flex-direction:column;gap:7px;margin-bottom:15px}
+  .field label{font-size:13px;color:var(--muted)}
+  .field .inline{display:flex;gap:8px}
+  .field input[type=text],.field input:not([type]){flex:1}
+  .field input{height:var(--btn-h);padding:0 13px;border:1px solid var(--line);border-radius:10px;background:var(--fill);color:var(--fg);font-size:14px}
+  .field input::placeholder{color:var(--fg3)}
+  .field input:focus{outline:none;background:var(--fill-2);border-color:transparent;box-shadow:0 0 0 4px var(--ring)}
+  .checkline{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--muted);margin-bottom:14px}
+  .row{display:flex;gap:10px;justify-content:flex-end;margin-top:8px}
+  .log{background:rgba(0,0,0,.5);color:#e4e7ec;border:1px solid var(--line);border-radius:12px;padding:13px;height:240px;overflow:auto;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12px;line-height:1.55;white-space:pre-wrap;display:none;margin-top:12px}
+  .log.show{display:block}
+  .hint{font-size:12px;color:var(--muted);margin-top:8px;line-height:1.55}
+  .hint code{background:var(--fill);padding:1px 6px;border-radius:5px}
+
+  /* 步骤（进度/托盘复用） */
+  .steps{list-style:none;padding:0;margin:12px 0 6px}
+  .step{display:flex;gap:11px;align-items:flex-start;padding:6px 0}
+  .step.pending{opacity:.4}
+  .stepdot{width:18px;height:18px;border-radius:50%;border:2px solid var(--line);flex:none;margin-top:2px;position:relative;box-sizing:border-box}
+  .step.done .stepdot{background:var(--green);border-color:var(--green)}
+  .step.done .stepdot::after{content:"✓";color:#06220f;font-size:11px;font-weight:800;position:absolute;inset:0;display:flex;align-items:center;justify-content:center}
+  .step.active .stepdot{border-color:var(--accent);border-top-color:transparent;animation:spin .8s linear infinite}
+  .step.error .stepdot{background:var(--red);border-color:var(--red)}
+  .step.error .stepdot::after{content:"!";color:#fff;font-weight:700;font-size:12px;position:absolute;inset:0;display:flex;align-items:center;justify-content:center}
+  @keyframes spin{to{transform:rotate(360deg)}}
+  .steptxt b{font-size:14px;font-weight:600;display:block;line-height:1.4;color:var(--fg)}
+  .steptxt em{font-style:normal;font-size:12px;color:var(--muted);display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:440px}
+  .lbl{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px}
+
+  /* —— 任务托盘 —— */
+  .tray{position:fixed;right:20px;bottom:20px;z-index:45;width:344px;display:flex;flex-direction:column;gap:12px;max-height:74vh;overflow:auto}
+  .tray:empty{display:none}
+  .tray-item{background:var(--glass-2);backdrop-filter:var(--blur);-webkit-backdrop-filter:var(--blur);border:1px solid var(--line);border-radius:16px;padding:14px 16px;box-shadow:var(--shadow),var(--hair)}
+  .tray-top{display:flex;align-items:center;gap:8px}
+  .tray-src{font-weight:650;font-size:14px;color:var(--fg);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;cursor:pointer}
+  .tray-x{border:0;background:none;color:var(--muted);cursor:pointer;font-size:14px;padding:2px 6px;border-radius:6px}
+  .tray-x:hover{color:var(--fg);background:var(--fill)}
+  .tray-bar{height:6px;background:var(--fill);border-radius:99px;overflow:hidden;margin-top:10px}
+  .tray-fill{height:100%;background:var(--accent);border-radius:99px;transition:width .4s ease}
+  .tray-item.done .tray-fill{background:var(--green)}
+  .tray-item.error .tray-fill{background:var(--red)}
+  .tray-meta{display:flex;justify-content:space-between;gap:10px;font-size:12px;color:var(--muted);margin-top:8px}
+  .tray-meta .lab{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .tray-meta .mdl{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;white-space:nowrap;flex:none}
+  .tray-steps{margin-top:10px;padding-top:8px;border-top:1px solid var(--line);display:none}
+  .tray-item.expanded .tray-steps{display:block}
+  .tray-steps .steps{margin:0}
+  .tray-steps .step{padding:3px 0;gap:9px}
+  .tray-steps .stepdot{width:15px;height:15px}
+  .tray-steps .steptxt b{font-size:12.5px}
+
+  /* 应用到项目 */
+  .apply-sec{margin:18px 0;padding-top:18px;border-top:1px solid var(--line)}
+  .apply-sec.first{border-top:0;padding-top:0}
+  .apply-h{font-weight:650;font-size:14px;margin-bottom:10px;color:var(--fg)}
+  .apply-h .sub{font-weight:400;color:var(--muted);font-size:12px;margin-left:6px}
+  .copy-row{display:flex;flex-wrap:wrap;gap:8px}
+  .copy-row .btn{font-size:13px;height:34px}
+
+  /* lint 结果 */
+  .lint-head{display:flex;align-items:center;gap:20px;margin:14px 0}
+  .score{width:92px;height:92px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-direction:column;font-weight:750;flex:none;border:1px solid var(--line)}
+  .score b{font-size:30px;line-height:1}
+  .score span{font-size:11px;font-weight:500;opacity:.7}
+  .lint-counts{display:flex;gap:16px;font-size:14px;color:var(--muted)}
+  .lint-counts .n{font-weight:700;font-size:20px;display:block;color:var(--fg)}
+  .viol{border:1px solid var(--line);border-radius:12px;overflow:hidden;margin-top:12px}
+  .viol .vf{background:var(--fill);padding:9px 12px;font-weight:600;font-size:13px;color:var(--fg);border-bottom:1px solid var(--line)}
+  .viol .vrow{padding:9px 12px;border-bottom:1px solid var(--line);font-size:13px;color:var(--fg)}
+  .viol .vrow:last-child{border-bottom:0}
+  .sev{display:inline-block;font-size:11px;font-weight:700;padding:1px 7px;border-radius:5px;margin-right:8px}
+  .sev.error{background:rgba(255,69,58,.2);color:var(--red)}
+  .sev.warn{background:rgba(255,159,10,.2);color:var(--amber)}
+  .sev.info{background:var(--fill);color:var(--muted)}
+  .vsug{color:var(--muted);font-size:12px;margin-top:2px;margin-left:2px}
+
+  /* 对比 */
+  .cmp-scroll{overflow:auto}
+  .cmp{display:flex;gap:14px;min-width:min-content}
+  .cmp-col{min-width:240px;flex:1;border:1px solid var(--line);border-radius:14px;overflow:hidden;background:var(--panel)}
+  .cmp-cover{aspect-ratio:16/10;background:rgba(255,255,255,.04)}
+  .cmp-cover img{width:100%;height:100%;object-fit:cover;object-position:top;display:block}
+  .cmp-col h4{margin:12px 12px 2px;font-size:14px;color:var(--fg)}
+  .cmp-col .sub{margin:0 12px 8px;font-size:12px;color:var(--muted)}
+  .cmp-sec{border-top:1px solid var(--line);padding:10px 12px}
+  .cmp-sec .lbl{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;margin-bottom:6px}
+  .cmp-palette{display:flex;flex-wrap:wrap;gap:6px}
+  .cmp-sw{width:26px;height:26px;border-radius:6px;border:1px solid rgba(255,255,255,.14)}
+  .cmp-kv{font-size:12px;color:var(--fg)}
+  .cmp-chips{display:flex;flex-wrap:wrap;gap:4px}
+  .cmp-chips .tag{font-size:11px}
+
+  /* 模型徽章 & 视觉能力 */
+  .model-badge{gap:8px;font-variant-numeric:tabular-nums}
+  .mdot{width:8px;height:8px;border-radius:50%;background:var(--fg3);flex:none;box-shadow:0 0 0 3px rgba(255,255,255,.05)}
+  .mdot.ok{background:var(--green)}
+  .mdot.bad{background:var(--red)}
+  .model-row{display:flex;gap:12px;padding:11px 0;border-bottom:1px solid var(--line);font-size:13.5px}
+  .model-row:last-child{border-bottom:0}
+  .model-row .k{color:var(--muted);width:84px;flex:none}
+  .model-row .v{color:var(--fg);flex:1;word-break:break-all}
+  .vbadge{display:inline-flex;align-items:center;gap:6px;font-weight:600;border-radius:var(--pill);padding:2px 11px;font-size:12.5px;border:1px solid var(--line)}
+  .vbadge.yes{color:var(--green);border-color:rgba(48,209,88,.42);background:rgba(48,209,88,.12)}
+  .vbadge.no{color:var(--red);border-color:rgba(255,69,58,.42);background:rgba(255,69,58,.12)}
+  .vbadge.unk{color:var(--amber);border-color:rgba(255,159,10,.42);background:rgba(255,159,10,.12)}
+  .model-reply{font-size:12px;color:var(--muted);background:var(--fill);border:1px solid var(--line);border-radius:10px;padding:10px 12px;margin-top:6px;line-height:1.6;white-space:pre-wrap;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;max-height:130px;overflow:auto}
+</style>
+</head>
+<body>
+  <div class="topbar">
+    <div class="topbar-inner">
+      <div class="brand"><img src="/icon.svg" class="brandico" alt=""/>Haokan<span class="brandsub">设计资产库</span></div>
+      <div class="search"><input id="q" type="search" placeholder="搜索名称 / 来源 / 标签 / 风格描述…"/></div>
+      <button class="btn primary" id="addBtn">＋ 从 URL 提炼</button>
+      <button class="btn" id="importBtn">导入</button>
+      <button class="btn model-badge" id="modelBadge" title="当前模型与视觉能力"><span class="mdot" id="modelDot"></span><span id="modelBadgeText">模型…</span></button>
+    </div>
+    <div class="filters" id="filters"></div>
+  </div>
+
+  <div id="grid" class="grid"></div>
+  <div id="emptyState" class="empty-state" style="display:none">
+    <h2>资产库还是空的</h2>
+    <p>点右上角「从 URL 提炼」抓取第一个好看的网页设计，或导入一个 .stylepack。</p>
+  </div>
+
+  <!-- 选择工具栏 -->
+  <div class="seltoolbar" id="seltoolbar">
+    <span class="st-count" id="selCount">已选 0 项</span>
+    <button class="tbtn" id="selCompare">对比</button>
+    <button class="tbtn danger" id="selDelete">删除</button>
+    <button class="tbtn" id="selClear">取消</button>
+  </div>
+
+  <!-- 详情浮层 -->
+  <div class="overlay" id="overlay">
+    <div class="viewer">
+      <div class="viewer-bar">
+        <span class="vt" id="viewerTitle"></span>
+        <button class="icon-btn" id="reextractBtn" title="用当前最新版本重新提炼该网站，生成一个新资产（不会覆盖或删除原资产）">↻ 重新提炼</button>
+        <button class="icon-btn accent" id="applyBtn">应用到项目</button>
+        <button class="icon-btn" id="lintBtn">校验项目</button>
+        <button class="icon-btn" id="revealBtn">打开文件夹</button>
+        <a class="icon-btn" id="downloadBtn" href="#">下载</a>
+        <button class="icon-btn" id="closeViewer">关闭 ✕</button>
+      </div>
+      <iframe id="viewerFrame" title="preview"></iframe>
+    </div>
+  </div>
+
+  <!-- 新增 URL 弹窗（多 URL 后台并发） -->
+  <div class="modal" id="addModal">
+    <div class="dialog">
+      <h3>从 URL 提炼</h3>
+      <p>每行一个网址，可同时提炼多个（最多并发 3，其余自动排队）。提炼在后台进行，进度见右下角托盘。</p>
+      <div class="field"><label>网址（每行一个）</label><textarea id="urlInput" rows="4" placeholder="https://linear.app&#10;https://stripe.com"></textarea></div>
+      <div class="field"><label>每个站点采样页数</label><input id="pagesInput" type="number" min="1" max="12" value="5" /></div>
+      <div class="row"><button class="btn" id="addCancel">取消</button><button class="btn primary" id="addStart">开始提炼</button></div>
+    </div>
+  </div>
+
+  <!-- 任务托盘 -->
+  <div class="tray" id="tray"></div>
+
+  <!-- 导入弹窗 -->
+  <div class="modal" id="importModal">
+    <div class="dialog">
+      <h3>导入 .stylepack</h3>
+      <p>选择或粘贴本地 .stylepack 路径，导入到资产库。</p>
+      <div class="field"><label>文件路径</label><div class="inline"><input id="importPath" type="text" placeholder="~/Downloads/xxx.stylepack" /><button class="btn" id="importBrowse" style="display:none">浏览…</button></div></div>
+      <div class="row"><button class="btn" id="importCancel">取消</button><button class="btn primary" id="importGo">导入</button></div>
+      <div class="hint" id="importHint"></div>
+    </div>
+  </div>
+
+  <!-- lint 弹窗 -->
+  <div class="modal" id="lintModal">
+    <div class="dialog">
+      <h3>校验项目合规性</h3>
+      <p>用「<span id="lintPackName"></span>」的设计 token 检查你的项目代码是否守规矩（颜色/圆角/字体 + AI 味信号）。</p>
+      <div class="field"><label>项目路径（文件或目录）</label><div class="inline"><input id="lintPath" type="text" placeholder="~/code/my-app/src" /><button class="btn" id="lintBrowse" style="display:none">浏览…</button></div></div>
+      <div class="checkline"><input type="checkbox" id="lintSpacing"/><label for="lintSpacing">同时检查间距（更严格，可能有噪声）</label></div>
+      <div class="row"><button class="btn" id="lintCancel">关闭</button><button class="btn primary" id="lintRun">开始校验</button></div>
+      <div id="lintResult"></div>
+    </div>
+  </div>
+
+  <!-- 应用到项目弹窗 -->
+  <div class="modal" id="applyModal">
+    <div class="dialog">
+      <h3>把这套设计应用到你的项目</h3>
+      <div id="applyMain">
+        <p>让 AI 编码工具遵守这套设计语言，消除“AI 味”。两种方式任选：</p>
+        <div class="apply-sec first">
+          <div class="apply-h">① 复制粘贴<span class="sub">复制后粘贴进对应文件即可</span></div>
+          <div class="copy-row">
+            <button class="btn" data-copy="rules/ai-rules.md">复制 AI 规则</button>
+            <button class="btn" data-copy="rules/css-variables.css">复制 CSS 变量</button>
+            <button class="btn" data-copy="rules/tailwind.config.js">复制 Tailwind 配置</button>
+            <button class="btn" data-copy="tokens.json">复制 Tokens JSON</button>
+          </div>
+        </div>
+        <div class="apply-sec">
+          <div class="apply-h">② 一键写入项目目录<span class="sub">写入前先预览，确认后才落盘</span></div>
+          <div class="field"><label>项目路径</label><div class="inline"><input id="applyPath" type="text" placeholder="~/code/my-app" /><button class="btn" id="applyBrowse" style="display:none">浏览…</button></div></div>
+          <div class="copy-row">
+            <button class="btn" data-write="cursor">写入 .cursorrules</button>
+            <button class="btn" data-write="claude">写入 CLAUDE.md</button>
+            <button class="btn" data-write="agents">写入 AGENTS.md</button>
+            <button class="btn" data-write="kiro">写入 .kiro/steering</button>
+            <button class="btn" data-write="tokens">写入设计 tokens 文件</button>
+          </div>
+          <div class="hint">完整规范写入独立目录 <code>haokan-design/</code>，主文档只插入带 <code>HAOKAN:START/END</code> 标记的简短引用块：<b>重复写入只替换、不堆积</b>，首次修改前自动备份 <code>.haokan.bak</code>。</div>
+          <div class="hint" id="applyHint"></div>
+        </div>
+        <div class="row"><button class="btn" id="applyClose">关闭</button></div>
+      </div>
+      <div id="applyPreview" style="display:none">
+        <div class="apply-h">写入预览 · 确认后才落盘</div>
+        <div class="hint" id="applyPreviewOps"></div>
+        <div class="lbl" style="margin:12px 0 6px">将插入/写入的内容</div>
+        <pre class="log show" id="applyPreviewBlock" style="max-height:300px;margin-top:0"></pre>
+        <div class="hint" id="applyPreviewAssets"></div>
+        <div class="row"><button class="btn" id="applyPreviewCancel">返回</button><button class="btn primary" id="applyPreviewConfirm">确认写入</button></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 对比弹窗 -->
+  <div class="modal" id="cmpModal">
+    <div class="dialog wide">
+      <h3>设计资产对比</h3>
+      <p>并排比较所选资产的 token 系统。</p>
+      <div class="cmp-scroll"><div class="cmp" id="cmpBody"></div></div>
+      <div class="row"><button class="btn" id="cmpClose">关闭</button></div>
+    </div>
+  </div>
+
+  <!-- 模型信息弹窗 -->
+  <div class="modal" id="modelModal">
+    <div class="dialog">
+      <h3>模型与视觉能力</h3>
+      <p>画廊调用的本地模型（读取 Claude Code 当前生效配置），以及上游是否具备图像<b>视觉能力</b>——通过发送一张纯色图并请模型识别颜色<b>真实探测</b>得出。</p>
+      <div id="modelBody" class="model-body"><div class="hint">加载中…</div></div>
+      <div class="row"><button class="btn" id="modelRefresh">重新探测</button><button class="btn primary" id="modelClose">关闭</button></div>
+    </div>
+  </div>
+
+<script>
+const $ = (s)=>document.querySelector(s);
+let LIBRARY = [];
+let activeAesthetic = "";
+let showFav = false;
+let currentPack = null;
+const selected = new Set();
+const NATIVE = window.haokanNative || null;
+if(NATIVE) document.documentElement.classList.add("is-electron");
+
+function esc(s){return String(s||"").replace(/[<>&"]/g,c=>({"<":"&lt;",">":"&gt;","&":"&amp;",'"':"&quot;"}[c]));}
+// 美学标签可能是字符串、逗号串或数组，统一拆成去重的关键词列表，
+// 用于筛选标签的生成与匹配（避免把数组/逗号串当成单个标签，点击后筛不出内容）。
+function aesList(a){
+  const parts = (Array.isArray(a) ? a : String(a||"").split(",")).map(s=>String(s).trim()).filter(Boolean);
+  return [...new Set(parts)];
+}
+
+async function load(){
+  const r = await fetch("/api/library");
+  const j = await r.json();
+  LIBRARY = j.packs || [];
+  for(const n of [...selected]) if(!LIBRARY.find(p=>p.name===n)) selected.delete(n);
+  renderFilters(); render(); renderSel();
+}
+
+function renderFilters(){
+  const set = new Map();
+  for(const p of LIBRARY){ for(const a of aesList(p.aesthetic)) set.set(a,(set.get(a)||0)+1); }
+  const favN = LIBRARY.filter(p=>p.favorite).length;
+  const box = $("#filters");
+  const chips = [`<span class="chip ${activeAesthetic===""&&!showFav?"active":""}" data-a="">全部</span>`];
+  chips.push(`<span class="chip ${showFav?"active":""}" data-fav="1">★ 收藏 · ${favN}</span>`);
+  for(const [a,n] of [...set.entries()].sort((x,y)=>y[1]-x[1])){
+    chips.push(`<span class="chip ${activeAesthetic===a?"active":""}" data-a="${esc(a)}">${esc(a)} · ${n}</span>`);
+  }
+  box.innerHTML = chips.join("") + `<span class="count" id="count"></span>`;
+  box.querySelectorAll(".chip").forEach(c=>c.onclick=()=>{
+    if(c.dataset.fav){ showFav=!showFav; activeAesthetic=""; }
+    else { activeAesthetic=c.dataset.a; showFav=false; }
+    renderFilters(); render();
+  });
+}
+
+function visible(){
+  const q = ($("#q").value||"").trim().toLowerCase();
+  return LIBRARY.filter(p=>{
+    if(showFav && !p.favorite) return false;
+    if(activeAesthetic && !aesList(p.aesthetic).includes(activeAesthetic)) return false;
+    if(!q) return true;
+    return [p.source,p.oneLiner,aesList(p.aesthetic).join(" "),(p.tags||[]).join(" ")].join(" ").toLowerCase().includes(q);
+  });
+}
+
+function render(){
+  const items = visible();
+  const grid = $("#grid");
+  $("#emptyState").style.display = LIBRARY.length===0 ? "block":"none";
+  const cnt = $("#count"); if(cnt) cnt.textContent = `${items.length} / ${LIBRARY.length} 个资产`;
+  grid.innerHTML = items.map(cardHtml).join("");
+  grid.querySelectorAll(".card").forEach(el=>{
+    const name = el.dataset.name;
+    el.onclick = (e)=>{ if(e.target.closest(".checkbox")||e.target.closest(".star")) return; openDetail(name); };
+    el.querySelector(".checkbox").onclick = (e)=>{ e.stopPropagation(); toggleSelect(name); };
+    el.querySelector(".star").onclick = (e)=>{ e.stopPropagation(); toggleFav(name); };
+  });
+}
+
+function cardHtml(p){
+  const cover = p.cover ? `<div class="cover"><img loading="lazy" src="${p.cover}" alt=""></div>` : `<div class="cover empty">无封面</div>`;
+  const tags = (p.tags||[]).slice(0,4).map(t=>`<span class="tag">${esc(t)}</span>`).join("");
+  const sel = selected.has(p.name);
+  return `<div class="card ${sel?"selected":""}" data-name="${esc(p.name)}">
+    <div class="card-ov">
+      <div class="checkbox">${sel?"✓":""}</div>
+      <div class="star ${p.favorite?"on":""}">${p.favorite?"★":"☆"}</div>
+    </div>
+    ${cover}
+    <div class="card-body">
+      <div class="card-head"><span class="cdot" style="background:${esc(p.primaryColor)}"></span><span class="csource">${esc(p.source)}</span></div>
+      <div class="oneliner">${esc(p.oneLiner||aesList(p.aesthetic).join(", "))}</div>
+      <div class="tags">${tags}</div>
+    </div>
+  </div>`;
+}
+
+// —— 选择 & 收藏 ——
+function toggleSelect(name){ selected.has(name)?selected.delete(name):selected.add(name); render(); renderSel(); }
+function renderSel(){
+  const bar = $("#seltoolbar");
+  $("#selCount").textContent = `已选 ${selected.size} 项`;
+  $("#selCompare").style.display = selected.size>=2 ? "" : "none";
+  bar.classList.toggle("show", selected.size>0);
+}
+$("#selClear").onclick = ()=>{ selected.clear(); render(); renderSel(); };
+$("#selDelete").onclick = async ()=>{
+  if(!selected.size) return;
+  if(!confirm(`确定删除选中的 ${selected.size} 个资产？此操作不可撤销。`)) return;
+  await fetch("/api/delete",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({names:[...selected]})});
+  selected.clear(); await load();
+};
+async function toggleFav(name){
+  const p = LIBRARY.find(x=>x.name===name); if(!p) return;
+  p.favorite = !p.favorite;
+  await fetch("/api/favorite",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({name,value:p.favorite})});
+  renderFilters(); render();
+}
+
+// —— 详情 ——
+function openDetail(name){
+  const p = LIBRARY.find(x=>x.name===name); if(!p) return;
+  currentPack = p;
+  $("#viewerTitle").textContent = p.source + "  ·  " + name;
+  $("#viewerFrame").src = p.preview;
+  $("#downloadBtn").href = p.hasPackFile ? ("/download/"+encodeURIComponent(name)) : "#";
+  $("#downloadBtn").style.opacity = p.hasPackFile ? "1":".4";
+  $("#revealBtn").onclick = ()=>fetch("/api/reveal",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({name})});
+  $("#overlay").classList.add("show");
+}
+function closeDetail(){ $("#overlay").classList.remove("show"); $("#viewerFrame").src="about:blank"; }
+$("#closeViewer").onclick = closeDetail;
+$("#overlay").onclick = (e)=>{ if(e.target.id==="overlay") closeDetail(); };
+$("#q").addEventListener("input", render);
+
+// —— 重新提炼：用原始入口网址 + 原采样页数，走当前最新版本重新提炼，生成新资产（非破坏性）——
+$("#reextractBtn").onclick = async ()=>{
+  if(!currentPack) return;
+  const url = (currentPack.sourceUrls && currentPack.sourceUrls[0]) || (currentPack.source ? `https://${currentPack.source}/` : "");
+  if(!url){ alert("这个资产没有记录源网址，无法重新提炼。"); return; }
+  const maxPages = (currentPack.summary && currentPack.summary.pagesAnalyzed) || (currentPack.sourceUrls && currentPack.sourceUrls.length) || 5;
+  if(!confirm(`用当前最新版本重新提炼「${currentPack.source}」？\n\n入口网址：${url}\n采样页数：${maxPages}\n\n将新建一个资产，不会覆盖或删除原资产。进度见右下角托盘，完成后可与原资产对比、再删除旧的。`)) return;
+  try{
+    await fetch("/api/extract",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({urls:[url],maxPages})});
+    closeDetail();
+    pollJobs();
+  }catch(err){ alert("提交失败："+err.message); }
+};
+
+// —— 从 URL 提炼（多 URL、后台并发；进度见右下角托盘）——
+const addModal = $("#addModal");
+const ADD_STEPS = [
+  {id:"config", name:"连接本地模型"},
+  {id:"sample", name:"站点级采样"},
+  {id:"capture", name:"截图与样式抽取"},
+  {id:"extract", name:"抽取设计 token"},
+  {id:"cover", name:"合成封面"},
+  {id:"synthesize", name:"提炼设计语言"},
+  {id:"pack", name:"打包 .stylepack"},
+];
+$("#addBtn").onclick = ()=>{ $("#urlInput").value=""; addModal.classList.add("show"); setTimeout(()=>$("#urlInput").focus(),50); };
+$("#addCancel").onclick = ()=>addModal.classList.remove("show");
+$("#addStart").onclick = async ()=>{
+  const urls = $("#urlInput").value.split(/\n+/).map(s=>s.trim()).filter(Boolean);
+  const maxPages = parseInt($("#pagesInput").value,10)||5;
+  if(!urls.length || urls.some(u=>!/^https?:\/\//.test(u))){ alert("请输入合法的 http(s) 网址（每行一个）"); return; }
+  try{
+    await fetch("/api/extract",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({urls,maxPages})});
+    addModal.classList.remove("show");
+    pollJobs();
+  }catch(err){ alert("提交失败："+err.message); }
+};
+
+// —— 任务托盘（轮询 /api/jobs，展示所有提炼任务的实时进度）——
+const trayExpanded = new Set();
+const prevStatus = {};
+function stepsHtml(cur, status){
+  const idx = ADD_STEPS.findIndex(s=>s.id===cur);
+  return `<ul class="steps">`+ADD_STEPS.map((s,i)=>{
+    let cls="pending";
+    if(status==="done") cls="done";
+    else if(status==="error") cls = idx>=0 ? (i<idx?"done":(i===idx?"error":"pending")) : "pending";
+    else cls = idx<0 ? "pending" : (i<idx?"done":(i===idx?"active":"pending"));
+    return `<li class="step ${cls}"><span class="stepdot"></span><span class="steptxt"><b>${s.name}</b></span></li>`;
+  }).join("")+`</ul>`;
+}
+function renderTray(list){
+  const tray=$("#tray");
+  if(!list.length){ tray.innerHTML=""; return; }
+  tray.innerHTML = list.map(j=>{
+    const st=j.status;
+    const statusText = st==="queued"?"排队中…":st==="running"?`${j.label||"提炼中"} · ${j.percent}%`:st==="done"?"已完成":"失败";
+    const model = j.model&&j.model.real ? `${j.model.tier}→${j.model.real}` : "";
+    const canClose = st==="done"||st==="error";
+    return `<div class="tray-item ${st} ${trayExpanded.has(j.jobId)?"expanded":""}" data-id="${j.jobId}">
+      <div class="tray-top">
+        <span class="tray-src" title="${esc(j.url)}">${esc(j.source)}</span>
+        ${canClose?`<button class="tray-x" data-x="${j.jobId}">✕</button>`:`<span class="tray-x" style="opacity:.35">•••</span>`}
+      </div>
+      <div class="tray-bar"><div class="tray-fill" style="width:${j.percent}%"></div></div>
+      <div class="tray-meta"><span class="lab">${esc(statusText)}${j.error&&st==="error"?" · "+esc(j.error):""}</span>${model?`<span class="mdl">${esc(model)}</span>`:""}</div>
+      <div class="tray-steps">${stepsHtml(j.step, j.status)}</div>
+    </div>`;
+  }).join("");
+  tray.querySelectorAll(".tray-src").forEach(el=>el.onclick=()=>{ const id=el.closest(".tray-item").dataset.id; trayExpanded.has(id)?trayExpanded.delete(id):trayExpanded.add(id); renderTray(list); });
+  tray.querySelectorAll("[data-x]").forEach(b=>b.onclick=async()=>{ await fetch("/api/jobs/dismiss",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({jobId:b.dataset.x})}); pollJobs(); });
+}
+async function pollJobs(){
+  let data; try{ data=await (await fetch("/api/jobs")).json(); }catch{ return; }
+  const list=(data.jobs||[]);
+  renderTray(list);
+  let refreshed=false;
+  for(const j of list){ const prev=prevStatus[j.jobId]; if(prev && prev!=="done" && j.status==="done" && !refreshed){ load(); refreshed=true; } prevStatus[j.jobId]=j.status; }
+}
+setInterval(pollJobs, 1500);
+pollJobs();
+
+// —— 导入 ——
+const importModal = $("#importModal");
+$("#importBtn").onclick = ()=>{ $("#importHint").textContent=""; importModal.classList.add("show"); };
+$("#importCancel").onclick = ()=>importModal.classList.remove("show");
+if(NATIVE?.pickStylepack){ $("#importBrowse").style.display=""; $("#importBrowse").onclick = async ()=>{ const p=await NATIVE.pickStylepack(); if(p) $("#importPath").value=p; }; }
+$("#importGo").onclick = async ()=>{
+  const p = $("#importPath").value.trim(); if(!p) return;
+  $("#importHint").textContent = "导入中…";
+  const r = await fetch("/api/import",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({path:p})});
+  const j = await r.json();
+  if(j.ok){ $("#importHint").textContent="已导入："+j.source; await load(); setTimeout(()=>importModal.classList.remove("show"),700); }
+  else $("#importHint").textContent="失败："+(j.error||"未知错误");
+};
+
+// —— lint ——
+const lintModal = $("#lintModal");
+$("#lintBtn").onclick = ()=>{ if(!currentPack) return; $("#lintPackName").textContent=currentPack.source; $("#lintResult").innerHTML=""; lintModal.classList.add("show"); };
+$("#lintCancel").onclick = ()=>lintModal.classList.remove("show");
+if(NATIVE?.pickDirectory){ $("#lintBrowse").style.display=""; $("#lintBrowse").onclick = async ()=>{ const p=await NATIVE.pickDirectory(); if(p) $("#lintPath").value=p; }; }
+$("#lintRun").onclick = async ()=>{
+  const p = $("#lintPath").value.trim(); if(!p||!currentPack) return;
+  $("#lintResult").innerHTML = `<div class="hint">校验中…</div>`;
+  const r = await fetch("/api/lint",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({name:currentPack.name,path:p,spacing:$("#lintSpacing").checked})});
+  const rep = await r.json();
+  if(rep.error){ $("#lintResult").innerHTML = `<div class="hint">失败：${esc(rep.error)}</div>`; return; }
+  $("#lintResult").innerHTML = lintHtml(rep);
+};
+function scoreStyle(s){
+  const col = s>=85?"var(--green)":s>=60?"var(--amber)":"var(--red)";
+  return `background:color-mix(in srgb, ${col} 14%, transparent);color:${col}`;
+}
+function lintHtml(rep){
+  const byFile = {};
+  for(const v of rep.violations){ (byFile[v.file]=byFile[v.file]||[]).push(v); }
+  const groups = Object.entries(byFile).map(([f,vs])=>`
+    <div class="viol"><div class="vf">${esc(f)}</div>
+    ${vs.map(v=>`<div class="vrow"><span class="sev ${v.severity}">${({error:"错误",warn:"警告",info:"提示"})[v.severity]}</span>
+      <span style="color:var(--muted)">L${v.line}</span> [${v.type}] ${esc(v.message)}
+      ${v.suggestion?`<div class="vsug">↳ ${esc(v.suggestion)}</div>`:""}</div>`).join("")}
+    </div>`).join("");
+  const clean = rep.violations.length===0 ? `<div class="hint" style="color:var(--green)">✓ 未发现越界，项目与该设计系统高度一致。</div>`:"";
+  return `<div class="lint-head">
+      <div class="score" style="${scoreStyle(rep.score)}"><b>${rep.score}</b><span>/100</span></div>
+      <div class="lint-counts">
+        <div><span class="n" style="color:var(--red)">${rep.counts.error}</span>错误</div>
+        <div><span class="n" style="color:var(--amber)">${rep.counts.warn}</span>警告</div>
+        <div><span class="n" style="color:var(--muted)">${rep.counts.info}</span>提示</div>
+        <div><span class="n">${rep.filesScanned}</span>文件</div>
+      </div>
+    </div>${clean}${groups}
+    ${rep.truncated?`<div class="hint">违规过多，仅显示前部分。</div>`:""}`;
+}
+
+// —— 应用到项目 ——
+const applyModal = $("#applyModal");
+let pendingTarget = null;
+const OP_LABEL = {
+  "create":"新建文件",
+  "append-block":"在文件末尾追加规范标记块（保留原内容，先自动备份 .haokan.bak）",
+  "replace-block":"替换文件中已有的规范标记块（不堆积、不重复）",
+  "overwrite":"覆盖该专属 steering 文件",
+  "write-assets":"写入独立目录 haokan-design/（不改动任何现有文档）",
+};
+function showApplyMain(){ $("#applyPreview").style.display="none"; $("#applyMain").style.display=""; }
+$("#applyBtn").onclick = ()=>{ if(!currentPack) return; $("#applyHint").textContent=""; showApplyMain(); applyModal.classList.add("show"); };
+$("#applyClose").onclick = ()=>applyModal.classList.remove("show");
+if(NATIVE?.pickDirectory){ $("#applyBrowse").style.display=""; $("#applyBrowse").onclick=async()=>{ const p=await NATIVE.pickDirectory(); if(p) $("#applyPath").value=p; }; }
+applyModal.querySelectorAll("[data-copy]").forEach(b=>b.onclick=async()=>{
+  if(!currentPack) return;
+  try{
+    const txt = await (await fetch("/packs/"+encodeURIComponent(currentPack.name)+"/"+b.dataset.copy)).text();
+    await navigator.clipboard.writeText(txt);
+    const o=b.textContent; b.textContent="已复制 ✓"; setTimeout(()=>b.textContent=o,1300);
+  }catch(e){ $("#applyHint").textContent="复制失败："+e.message; }
+});
+// 写入前先预览
+applyModal.querySelectorAll("[data-write]").forEach(b=>b.onclick=async()=>{
+  if(!currentPack) return;
+  const path=$("#applyPath").value.trim();
+  if(!path){ $("#applyHint").textContent="请先填写项目路径"; return; }
+  pendingTarget=b.dataset.write;
+  $("#applyHint").textContent="生成预览…";
+  try{
+    const j=await (await fetch("/api/apply/preview",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({name:currentPack.name,path,target:pendingTarget})})).json();
+    if(!j.ok){ $("#applyHint").textContent="预览失败："+(j.error||"未知"); return; }
+    $("#applyHint").textContent="";
+    $("#applyPreviewOps").innerHTML = (j.actions||[]).map(a=>`· <code>${esc(a.path)}</code> → ${esc(OP_LABEL[a.op]||a.op)}`).join("<br>");
+    $("#applyPreviewBlock").textContent = j.block ? j.block : (j.fullSpec ? "（写入完整规范 ai-rules.md 全文到该 steering 文件）" : "（仅写入 haokan-design/ 目录文件，不修改任何现有文档）");
+    $("#applyPreviewAssets").textContent = (j.assets&&j.assets.length) ? ("同时写入独立目录："+j.assets.join("，")) : "";
+    $("#applyMain").style.display="none"; $("#applyPreview").style.display="";
+  }catch(e){ $("#applyHint").textContent="预览失败："+e.message; }
+});
+$("#applyPreviewCancel").onclick = showApplyMain;
+$("#applyPreviewConfirm").onclick = async ()=>{
+  if(!currentPack||!pendingTarget) return;
+  const path=$("#applyPath").value.trim();
+  $("#applyPreviewConfirm").disabled=true;
+  try{
+    const j=await (await fetch("/api/apply",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({name:currentPack.name,path,target:pendingTarget})})).json();
+    showApplyMain();
+    $("#applyHint").textContent = j.ok ? ("✔ 已写入："+j.written.join("；")+(j.notes&&j.notes.length?("　"+j.notes.join("；")):"")) : ("✗ 失败："+(j.error||"未知"));
+  }catch(e){ showApplyMain(); $("#applyHint").textContent="✗ 请求失败："+e.message; }
+  finally{ $("#applyPreviewConfirm").disabled=false; }
+};
+
+// —— 对比 ——
+const cmpModal = $("#cmpModal");
+$("#cmpClose").onclick = ()=>cmpModal.classList.remove("show");
+$("#selCompare").onclick = async ()=>{
+  const names = [...selected];
+  const packs = names.map(n=>LIBRARY.find(p=>p.name===n)).filter(Boolean);
+  cmpModal.classList.add("show");
+  $("#cmpBody").innerHTML = `<div class="hint">加载 token…</div>`;
+  const toks = await Promise.all(packs.map(p=>fetch(p.tokens).then(r=>r.json()).catch(()=>({}))));
+  $("#cmpBody").innerHTML = packs.map((p,i)=>cmpCol(p,toks[i])).join("");
+};
+function tokVals(obj){ return Object.values(obj||{}).map(t=>t.$value); }
+function cmpCol(p,tok){
+  const palette = Object.entries(tok.color||{}).map(([role,t])=>`<div class="cmp-sw" title="${role} ${t.$value}" style="background:${t.$value}"></div>`).join("");
+  const sizes = tokVals(tok.fontSize).join(" · ");
+  const spacing = tokVals(tok.spacing).join(" · ");
+  const radius = Object.entries(tok.radius||{}).filter(([k])=>k!=="default").map(([k,t])=>t.$value).join(" · ");
+  const fonts = [tok.font?.primary?.$value, tok.font?.secondary?.$value].filter(Boolean).join(" / ");
+  const tags = (p.tags||[]).map(t=>`<span class="tag">${esc(t)}</span>`).join("");
+  return `<div class="cmp-col">
+    <div class="cmp-cover">${p.cover?`<img src="${p.cover}">`:""}</div>
+    <h4>${esc(p.source)}</h4><div class="sub">${esc(aesList(p.aesthetic).join(", "))} · ${esc(p.theme||"")} · ${esc(p.density||"")}</div>
+    <div class="cmp-sec"><div class="lbl">色板</div><div class="cmp-palette">${palette}</div></div>
+    <div class="cmp-sec"><div class="lbl">字体</div><div class="cmp-kv">${esc(fonts||"—")}</div></div>
+    <div class="cmp-sec"><div class="lbl">字号阶</div><div class="cmp-kv">${esc(sizes||"—")}</div></div>
+    <div class="cmp-sec"><div class="lbl">间距</div><div class="cmp-kv">${esc(spacing||"—")}</div></div>
+    <div class="cmp-sec"><div class="lbl">圆角</div><div class="cmp-kv">${esc(radius||"—")}</div></div>
+    <div class="cmp-sec"><div class="lbl">标签</div><div class="cmp-chips">${tags||"—"}</div></div>
+  </div>`;
+}
+
+// —— 模型信息 & 视觉能力 ——
+let MODEL_INFO = null;
+const modelModal = $("#modelModal");
+function visLabel(v){
+  if(!v || v.supported==null) return {cls:"unk",text:"视觉未知"};
+  return v.supported ? {cls:"yes",text:"支持视觉"} : {cls:"no",text:"无视觉"};
+}
+function srcLabel(s){ return ({probe:"真实探测",heuristic:"按模型名推断","offline-heuristic":"离线推断",unknown:"未确定"})[s] || s || ""; }
+function renderModelBadge(){
+  const dot=$("#modelDot"), txt=$("#modelBadgeText");
+  if(!MODEL_INFO){ txt.textContent="模型"; dot.className="mdot"; return; }
+  dot.className = "mdot " + (MODEL_INFO.ok ? "ok" : "bad");
+  const v = visLabel(MODEL_INFO.vision);
+  const name = MODEL_INFO.real || MODEL_INFO.configured || "模型";
+  txt.textContent = `${name} · ${v.text}`;
+}
+function renderModelDetail(){
+  const m = MODEL_INFO || {}; const v = visLabel(m.vision); const src = m.vision ? srcLabel(m.vision.source) : "";
+  $("#modelBody").innerHTML = `
+    <div class="model-row"><span class="k">连通状态</span><span class="v">${m.ok?'<span style="color:var(--green)">✓ 已连通</span>':'<span style="color:var(--red)">✗ 未连通</span>'}${m.error?`　<span class="muted">${esc(m.error)}</span>`:""}</span></div>
+    <div class="model-row"><span class="k">配置模型</span><span class="v">${esc(m.configured||"—")}${m.tier?`　<span class="muted">(${esc(m.tier)})</span>`:""}</span></div>
+    <div class="model-row"><span class="k">实际上游</span><span class="v"><b>${esc(m.real||"—")}</b></span></div>
+    <div class="model-row"><span class="k">视觉能力</span><span class="v"><span class="vbadge ${v.cls}">${v.text}</span>${src?`　<span class="muted">${esc(src)}</span>`:""}</span></div>
+    ${m.vision&&m.vision.reply?`<div class="model-row"><span class="k">探测回执</span><span class="v"><div class="model-reply">${esc(m.vision.reply)}</div></span></div>`:""}
+    ${m.vision&&m.vision.detail?`<div class="model-row"><span class="k">说明</span><span class="v muted">${esc(m.vision.detail)}</span></div>`:""}
+    <div class="model-row"><span class="k">端点</span><span class="v muted">${esc(m.endpoint||"—")}</span></div>
+    <div class="model-row"><span class="k">配置来源</span><span class="v muted">${esc(m.configSource||"—")}</span></div>`;
+}
+async function loadModel(force){
+  try{
+    if(force){ $("#modelBadgeText").textContent="探测中…"; if(modelModal.classList.contains("show")) $("#modelBody").innerHTML='<div class="hint">重新探测中…</div>'; }
+    MODEL_INFO = await (await fetch("/api/model"+(force?"?refresh=1":""))).json();
+  }catch{ MODEL_INFO = { ok:false, vision:{supported:null,source:"unknown"} }; }
+  renderModelBadge();
+  if(modelModal.classList.contains("show")) renderModelDetail();
+}
+$("#modelBadge").onclick = ()=>{ renderModelDetail(); modelModal.classList.add("show"); };
+$("#modelClose").onclick = ()=>modelModal.classList.remove("show");
+$("#modelRefresh").onclick = ()=>loadModel(true);
+$("#modelModal").onclick = (e)=>{ if(e.target.id==="modelModal") modelModal.classList.remove("show"); };
+
+document.addEventListener("keydown",(e)=>{ if(e.key==="Escape"){ closeDetail(); [addModal,importModal,lintModal,applyModal,cmpModal,modelModal].forEach(m=>m.classList.remove("show")); } });
+
+load();
+loadModel();
+</script>
+</body>
+</html>

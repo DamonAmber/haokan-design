@@ -1,0 +1,23 @@
+# 依赖
+node_modules/
+
+# 产物 / 输出
+output/
+release/
+dist/
+*.stylepack
+
+# 运行时工作目录 & 临时产物
+.work/
+tmp/
+.playwright-mcp/
+style-restore-test/
+
+# 日志与系统文件
+*.log
+.DS_Store
+
+# 环境变量
+.env
+.env.*
+!.env.example

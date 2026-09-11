@@ -1,0 +1,56 @@
+{
+  "name": "haokan-design",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "main": "electron/main.cjs",
+  "description": "把好看的网页设计抽象成可复用、可分享的设计资产（.stylepack），用于约束 AI 编码工具的产出。",
+  "bin": {
+    "haokan": "src/cli.js"
+  },
+  "scripts": {
+    "start": "node src/cli.js",
+    "extract": "node src/cli.js",
+    "test": "node --test",
+    "lint-project": "node src/lint.js",
+    "gallery": "node src/gallery/server.js",
+    "app": "electron .",
+    "dist": "electron-builder",
+    "dist:dir": "electron-builder --dir"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {
+    "adm-zip": "^0.5.16",
+    "playwright": "^1.49.1",
+    "sharp": "^0.33.5"
+  },
+  "devDependencies": {
+    "electron": "^33.2.0",
+    "electron-builder": "^25.1.8"
+  },
+  "build": {
+    "appId": "com.haokan.app",
+    "productName": "Haokan",
+    "asar": false,
+    "directories": {
+      "output": "release"
+    },
+    "files": [
+      "electron/**/*",
+      "src/**/*",
+      "package.json"
+    ],
+    "mac": {
+      "target": "dmg",
+      "category": "public.app-category.developer-tools"
+    },
+    "win": {
+      "target": "nsis"
+    },
+    "linux": {
+      "target": "AppImage"
+    }
+  }
+}
