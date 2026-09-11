@@ -1,7 +1,15 @@
 name: Release macOS dmg
 
-# 打形如 v1.0.0 的 tag 时触发：在 macOS runner 上用 electron-builder 打包 .dmg，
-# 并作为附件发布到对应 tag 的 GitHub Release。也可在 Actions 页手动触发。
+# 打形如 v1.0.0 的 tag 时触发：在 Apple Silicon 与 Intel 两个 macOS runner 上
+# 分别用 electron-builder 打包对应架构的 .dmg，作为附件发布到同一 tag 的 GitHub Release。
+#
+# 代码签名 / 公证为「可选」：仓库配置了对应 Secrets 时自动启用，否则回退为未签名包。
+# 需要的 Secrets（Settings → Secrets and variables → Actions）：
+#   MAC_CSC_LINK               —— base64 编码的 Developer ID Application 证书(.p12)
+#   MAC_CSC_KEY_PASSWORD       —— 该 .p12 的导出密码
+#   APPLE_ID                   —— 用于公证的 Apple ID（可选，配了才公证）
+#   APPLE_APP_SPECIFIC_PASSWORD—— 该 Apple ID 的 App 专用密码
+#   APPLE_TEAM_ID              —— 团队 ID（本项目为 MA5G62M45A）
 on:
   push:
     tags:
@@ -9,11 +17,19 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: write # 发布 Release 需要写权限
+  contents: write
 
 jobs:
   build-mac:
-    runs-on: macos-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: macos-14 # Apple Silicon
+            arch: arm64
+          - os: macos-13 # Intel
+            arch: x64
+    runs-on: ${{ matrix.os }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -27,12 +43,28 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Build dmg (electron-builder)
+      - name: Build dmg (${{ matrix.arch }})
         env:
-          # 未配置苹果开发者证书：关闭自动签名，产出未签名 dmg（用户首次打开需右键"打开"）
-          CSC_IDENTITY_AUTO_DISCOVERY: "false"
+          CSC_LINK: ${{ secrets.MAC_CSC_LINK }}
+          CSC_KEY_PASSWORD: ${{ secrets.MAC_CSC_KEY_PASSWORD }}
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_APP_SPECIFIC_PASSWORD: ${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: npm run dist -- --publish never
+        run: |
+          set -e
+          if [ -z "$CSC_LINK" ]; then
+            echo "::notice::未配置签名证书 Secrets，产出未签名 dmg"
+            export CSC_IDENTITY_AUTO_DISCOVERY=false
+            npm run dist -- --mac --${{ matrix.arch }} --publish never
+          elif [ -n "$APPLE_ID" ]; then
+            echo "::notice::已配置证书与 Apple ID，签名并公证"
+            npm run dist -- --mac --${{ matrix.arch }} --publish never \
+              -c.mac.notarize.teamId="$APPLE_TEAM_ID"
+          else
+            echo "::notice::已配置证书（无 Apple ID），仅签名不公证"
+            npm run dist -- --mac --${{ matrix.arch }} --publish never
+          fi
 
       - name: List build output
         run: ls -la release || true
@@ -43,7 +75,6 @@ jobs:
           files: |
             release/*.dmg
             release/*.dmg.blockmap
-            release/latest-mac.yml
           fail_on_unmatched_files: false
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

@@ -85,6 +85,12 @@ npm run dist:dir     # 仅生成未压缩的 .app（更快，便于本地试用�
 
 > 说明：应用内「从 URL 提炼」依赖 Playwright 的 Chromium；分发前需确保其可用（`npx playwright install chromium`）。浏览/对比/校验/导入不受影响。
 
+### 下载与发布
+
+- **下载**：预编译 dmg 见 [Releases](https://github.com/DamonAmber/haokan-design/releases)，提供 **Apple Silicon (arm64)** 与 **Intel (x64)** 两种；或从[官网](https://damonamber.github.io/haokan-design/)一键下载最新版。
+- **发布**：打 `vX.Y.Z` tag 即触发 GitHub Actions 在 arm64 / x64 双 runner 上构建 dmg 并发布到对应 Release。
+- **签名**：本地打包用 Developer ID 自动签名并启用 Hardened Runtime；正式对外版本建议开启公证。完整流程、CI Secrets 与公证配置见 [`.kiro/steering/release-and-publish.md`](.kiro/steering/release-and-publish.md)。
+
 ## 设计 lint —— 校验闭环（消除 AI 味）
 
 用提炼出的 token **反查**项目代码是否守规矩：颜色是否在色板内（按感知色差 ΔE 判定）、圆角/字体是否落在规范内、**过渡时长与缓动曲线是否在动效 token 内**，并识别"AI 味"信号（如越界的通用紫色渐变）。
@@ -140,7 +146,7 @@ npm test        # node --test，运行 test/ 下全部用例
 - ~~次字体回退族硬编码为 `serif`~~ **已修复**：现按字体类型（等宽 / 衬线 / 无衬线）自动选择回退族，并新增独立的**展示/标题字体**（`--font-display`）识别，避免大标题误用正文/等宽字体。
 - 页面聚类用 URL 路径启发式，未做 DOM 模板指纹去重。
 - lint 目前以 CSS/内联样式的颜色/圆角/字体为主，Tailwind class（如 `rounded-lg`）与 JS 变量间接引用暂未深度解析。
-- `npm run dist` 完整打包依赖网络下载 Electron 二进制，且未做代码签名；应用内提炼需本机已装 Playwright Chromium。
+- 代码签名已接入（本地 Developer ID 自动签名 + Hardened Runtime，CI 可经 Secrets 启用）；对外正式版建议开启**公证**以免 Gatekeeper 警告，配置见发版规范。应用内提炼需本机已装 Playwright Chromium。
 
 ## 目录
 
