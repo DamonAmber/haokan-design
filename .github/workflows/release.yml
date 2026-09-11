@@ -53,16 +53,19 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           set -e
-          if [ -z "$CSC_LINK" ]; then
-            echo "::notice::未配置签名证书 Secrets，产出未签名 dmg"
-            export CSC_IDENTITY_AUTO_DISCOVERY=false
-            npm run dist -- --mac --${{ matrix.arch }} --publish never
-          elif [ -n "$APPLE_ID" ]; then
-            echo "::notice::已配置证书与 Apple ID，签名并公证"
-            npm run dist -- --mac --${{ matrix.arch }} --publish never \
-              -c.mac.notarize.teamId="$APPLE_TEAM_ID"
+          if [ -n "$CSC_LINK" ]; then
+            if [ -n "$APPLE_ID" ]; then
+              echo "::notice::证书 + Apple ID：签名并公证"
+              npm run dist -- --mac --${{ matrix.arch }} --publish never -c.mac.notarize.teamId="$APPLE_TEAM_ID"
+            else
+              echo "::notice::已配置证书（无 Apple ID）：仅签名不公证"
+              npm run dist -- --mac --${{ matrix.arch }} --publish never
+            fi
           else
-            echo "::notice::已配置证书（无 Apple ID），仅签名不公证"
+            # 未配置签名 Secrets：清掉可能为空串的证书/公证变量，避免 electron-builder 误入签名流程
+            echo "::notice::未配置证书 Secrets：产出未签名 dmg"
+            unset CSC_LINK CSC_KEY_PASSWORD APPLE_ID APPLE_APP_SPECIFIC_PASSWORD APPLE_TEAM_ID
+            export CSC_IDENTITY_AUTO_DISCOVERY=false
             npm run dist -- --mac --${{ matrix.arch }} --publish never
           fi
 
