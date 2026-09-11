@@ -1,0 +1,49 @@
+name: Release macOS dmg
+
+# 打形如 v1.0.0 的 tag 时触发：在 macOS runner 上用 electron-builder 打包 .dmg，
+# 并作为附件发布到对应 tag 的 GitHub Release。也可在 Actions 页手动触发。
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch:
+
+permissions:
+  contents: write # 发布 Release 需要写权限
+
+jobs:
+  build-mac:
+    runs-on: macos-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build dmg (electron-builder)
+        env:
+          # 未配置苹果开发者证书：关闭自动签名，产出未签名 dmg（用户首次打开需右键"打开"）
+          CSC_IDENTITY_AUTO_DISCOVERY: "false"
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: npm run dist -- --publish never
+
+      - name: List build output
+        run: ls -la release || true
+
+      - name: Publish dmg to GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            release/*.dmg
+            release/*.dmg.blockmap
+            release/latest-mac.yml
+          fail_on_unmatched_files: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

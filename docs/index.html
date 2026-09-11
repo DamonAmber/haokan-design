@@ -1,0 +1,201 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>Haokan · 把好看的网页提炼成可复用的设计资产</title>
+<meta name="description" content="Haokan 把好看的网页设计提炼成可复用、可分享的设计资产（.stylepack），用于约束 AI 编码工具的产出、消除 AI 味。CLI + 资产库画廊 + macOS 桌面版 + 设计 lint。"/>
+<link rel="icon" href="assets/icon.svg"/>
+<meta property="og:title" content="Haokan · 设计资产提炼工具"/>
+<meta property="og:description" content="把好看的网页提炼成可复用的设计资产，约束 AI 编码工具产出、消除 AI 味。"/>
+<meta property="og:image" content="assets/gallery.png"/>
+<style>
+  :root{
+    --bg:#0b0b0f; --fg:#f5f5f7; --muted:rgba(235,235,245,.62); --fg3:rgba(235,235,245,.34);
+    --accent:#0a84ff; --accent-press:#409cff; --green:#30d158; --amber:#ff9f0a; --purple:#bf5af2;
+    --line:rgba(255,255,255,.10); --line-strong:rgba(255,255,255,.18);
+    --glass:rgba(24,24,28,.55); --glass-2:rgba(24,24,28,.72); --fill:rgba(120,120,128,.20); --fill-2:rgba(120,120,128,.34);
+    --radius:14px; --radius-lg:22px; --pill:980px;
+    --blur:saturate(180%) blur(30px); --hair:inset 0 1px 0 rgba(255,255,255,.12);
+    --shadow-lg:0 30px 80px rgba(0,0,0,.6);
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0}
+  html{scroll-behavior:smooth}
+  body{background:var(--bg);color:var(--fg);
+    font-family:-apple-system,"SF Pro Text","SF Pro Display","Helvetica Neue","PingFang SC","Microsoft YaHei",sans-serif;
+    line-height:1.6;-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility}
+  body::before{content:"";position:fixed;inset:0;z-index:-1;pointer-events:none;background:
+    radial-gradient(70vw 52vw at 8% -8%, rgba(10,132,255,.16), transparent 55%),
+    radial-gradient(60vw 50vw at 104% 6%, rgba(191,90,242,.12), transparent 55%),
+    radial-gradient(66vw 60vw at 50% 120%, rgba(48,209,88,.06), transparent 55%);}
+  a{color:inherit;text-decoration:none}
+  .wrap{max-width:1120px;margin:0 auto;padding:0 24px}
+
+  /* nav */
+  header.top{position:sticky;top:0;z-index:20;background:var(--glass);backdrop-filter:var(--blur);-webkit-backdrop-filter:var(--blur);border-bottom:1px solid var(--line);box-shadow:var(--hair)}
+  .nav{display:flex;align-items:center;gap:18px;height:62px}
+  .brand{display:flex;align-items:center;gap:10px;font-weight:700;font-size:17px;letter-spacing:-.02em}
+  .brand img{width:26px;height:26px;border-radius:8px;box-shadow:0 1px 4px rgba(0,0,0,.5)}
+  .nav .links{display:flex;gap:22px;margin-left:14px;font-size:14px;color:var(--muted)}
+  .nav .links a:hover{color:var(--fg)}
+  .nav .right{margin-left:auto;display:flex;gap:10px;align-items:center}
+  .btn{height:38px;display:inline-flex;align-items:center;justify-content:center;gap:8px;border:1px solid var(--line);
+    background:var(--fill);color:var(--fg);padding:0 16px;border-radius:10px;font-size:14px;font-weight:550;cursor:pointer;
+    white-space:nowrap;transition:.15s}
+  .btn:hover{background:var(--fill-2)}
+  .btn.primary{background:var(--accent);border-color:transparent;color:#fff;box-shadow:0 2px 14px rgba(10,132,255,.45)}
+  .btn.primary:hover{background:var(--accent-press)}
+  .btn.lg{height:48px;padding:0 22px;font-size:15.5px;border-radius:12px}
+
+  /* hero */
+  .hero{padding:96px 0 56px;max-width:820px}
+  .eyebrow{display:inline-flex;align-items:center;gap:8px;font-size:13px;color:var(--muted);
+    border:1px solid var(--line);border-radius:var(--pill);padding:5px 14px 5px 10px;margin-bottom:26px}
+  .eyebrow .dot{width:7px;height:7px;border-radius:50%;background:var(--green)}
+  h1{font-size:60px;line-height:1.05;letter-spacing:-.03em;font-weight:720;margin:0 0 22px}
+  h1 .g{background:linear-gradient(96deg,#8fb4ff,#0a84ff 40%,#bf5af2);-webkit-background-clip:text;background-clip:text;color:transparent}
+  .lead{font-size:20px;line-height:1.6;color:var(--muted);max-width:660px;margin:0 0 30px}
+  .cta{display:flex;gap:12px;flex-wrap:wrap;align-items:center}
+  .subnote{margin-top:16px;font-size:12.5px;color:var(--fg3)}
+  .subnote code{background:var(--fill);padding:1px 7px;border-radius:5px;font-family:ui-monospace,SFMono-Regular,Menlo,monospace}
+
+  /* shot */
+  .shot{margin:20px 0 8px;border:1px solid var(--line-strong);border-radius:var(--radius-lg);overflow:hidden;
+    box-shadow:var(--shadow-lg),var(--hair);background:#08080b}
+  .shot img{width:100%;display:block}
+
+  /* sections */
+  section{padding:64px 0}
+  .sec-h{font-size:13px;font-weight:650;letter-spacing:.14em;text-transform:uppercase;color:var(--fg3);margin:0 0 10px}
+  .sec-title{font-size:30px;font-weight:700;letter-spacing:-.02em;margin:0 0 40px;max-width:640px}
+  .grid{display:grid;grid-template-columns:repeat(3,1fr);gap:18px}
+  @media(max-width:820px){.grid{grid-template-columns:1fr}h1{font-size:42px}.hero{padding:64px 0 40px}}
+  .card{background:var(--glass);border:1px solid var(--line);border-radius:var(--radius);padding:22px;box-shadow:var(--hair);transition:.2s}
+  .card:hover{border-color:var(--line-strong);transform:translateY(-3px)}
+  .card .ic{width:38px;height:38px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:19px;margin-bottom:14px;
+    background:rgba(10,132,255,.14);border:1px solid rgba(10,132,255,.28)}
+  .card h3{font-size:16.5px;font-weight:650;margin:0 0 7px}
+  .card p{font-size:13.5px;color:var(--muted);margin:0}
+
+  /* pipeline */
+  .flow{display:flex;flex-wrap:wrap;gap:10px;align-items:stretch}
+  .step{flex:1;min-width:150px;background:var(--glass);border:1px solid var(--line);border-radius:var(--radius);padding:16px 16px;box-shadow:var(--hair)}
+  .step .n{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12px;color:var(--accent);margin-bottom:6px}
+  .step b{display:block;font-size:14.5px;margin-bottom:4px}
+  .step span{font-size:12.5px;color:var(--muted)}
+
+  /* split */
+  .split{display:grid;grid-template-columns:1.05fr .95fr;gap:36px;align-items:center}
+  @media(max-width:820px){.split{grid-template-columns:1fr}}
+  .split img{width:100%;border:1px solid var(--line-strong);border-radius:var(--radius-lg);box-shadow:var(--shadow-lg),var(--hair)}
+  .split ul{margin:16px 0 0;padding:0;list-style:none}
+  .split li{display:flex;gap:10px;padding:8px 0;font-size:14.5px;color:var(--muted)}
+  .split li::before{content:"›";color:var(--accent);font-weight:800}
+  .split b{color:var(--fg)}
+
+  /* CTA band */
+  .band{background:var(--glass-2);backdrop-filter:var(--blur);-webkit-backdrop-filter:var(--blur);
+    border:1px solid var(--line);border-radius:var(--radius-lg);padding:44px 36px;box-shadow:var(--shadow-lg),var(--hair);text-align:center}
+  .band h2{font-size:28px;font-weight:720;letter-spacing:-.02em;margin:0 0 10px}
+  .band p{color:var(--muted);margin:0 0 22px}
+  .band .cta{justify-content:center}
+
+  footer{border-top:1px solid var(--line);margin-top:40px}
+  .foot{display:flex;flex-wrap:wrap;gap:12px;align-items:center;justify-content:space-between;padding:26px 0;color:var(--fg3);font-size:13px}
+  .foot a{color:var(--muted)}.foot a:hover{color:var(--fg)}
+  .kbd{font-family:ui-monospace,SFMono-Regular,Menlo,monospace}
+</style>
+</head>
+<body>
+  <header class="top">
+    <div class="wrap nav">
+      <div class="brand"><img src="assets/icon.svg" alt="Haokan"/>Haokan</div>
+      <nav class="links">
+        <a href="#features">特性</a>
+        <a href="#how">工作原理</a>
+        <a href="#vision">模型与视觉</a>
+        <a href="https://github.com/DamonAmber/haokan-design" target="_blank" rel="noopener">GitHub</a>
+      </nav>
+      <div class="right">
+        <a class="btn primary" href="https://github.com/DamonAmber/haokan-design/releases/latest" target="_blank" rel="noopener">下载 macOS 版</a>
+      </div>
+    </div>
+  </header>
+
+  <main class="wrap">
+    <section class="hero">
+      <span class="eyebrow"><span class="dot"></span>CLI · 资产库画廊 · macOS 桌面版 · 设计 lint</span>
+      <h1>把<span class="g">好看的网页</span>，<br>提炼成可复用的设计资产</h1>
+      <p class="lead">Haokan 从任意网站抽取真实的颜色、字体、间距、圆角、阴影与动效，去噪成一套 <b style="color:var(--fg)">设计 token（.stylepack）</b>，用来约束 AI 编码工具的产出，从源头消除“AI 味”。</p>
+      <div class="cta">
+        <a class="btn primary lg" href="https://github.com/DamonAmber/haokan-design/releases/latest" target="_blank" rel="noopener">⤓ 下载 macOS 版（.dmg）</a>
+        <a class="btn lg" href="https://github.com/DamonAmber/haokan-design" target="_blank" rel="noopener">在 GitHub 查看源码</a>
+      </div>
+      <div class="subnote">macOS · 应用未签名，首次打开请右键点图标选“打开”，或运行 <code>xattr -dr com.apple.quarantine /Applications/Haokan.app</code>。也可用 CLI：<code>node src/cli.js &lt;url&gt;</code></div>
+    </section>
+
+    <div class="shot"><img src="assets/gallery.png" alt="Haokan 设计资产库画廊"/></div>
+
+    <section id="features">
+      <div class="sec-h">Features</div>
+      <h2 class="sec-title">从抓取到落地，一条完整的“设计资产”流水线</h2>
+      <div class="grid">
+        <div class="card"><div class="ic">◲</div><h3>站点级采样</h3><p>结合 sitemap 与页面内链挑选代表性页面——跨页一致的元素，才是有意为之的设计系统。</p></div>
+        <div class="card"><div class="ic">◆</div><h3>确定性抽 token</h3><p>颜色按感知色差 ΔE 聚类、间距吸附基准栅格、字号推断字阶，数值全部来自真实测量，绝不臆造。</p></div>
+        <div class="card"><div class="ic">✎</div><h3>设计语言合成</h3><p>本地模型只做“解释与命名”，输出设计原则、Do/Don’t 与美学标签，不产生数值。</p></div>
+        <div class="card"><div class="ic">✓</div><h3>设计 lint 校验闭环</h3><p>用 token 反查项目代码：颜色/圆角/字体/动效是否越界，并识别“AI 味”信号，给出合规分与修正建议。</p></div>
+        <div class="card"><div class="ic">⧉</div><h3>一键应用到 AI 项目</h3><p>导出 CSS 变量 / Tailwind 配置 / AI 规则，写入 .cursorrules、CLAUDE.md、AGENTS.md 或 Kiro steering。</p></div>
+        <div class="card"><div class="ic">◐</div><h3>展示 / 正文字体分离</h3><p>区分标题展示字体与正文字体，按字体类型自动选择回退族，避免大标题误用等宽或正文字体。</p></div>
+      </div>
+    </section>
+
+    <section id="how">
+      <div class="sec-h">How it works</div>
+      <h2 class="sec-title">URL 进，.stylepack 出</h2>
+      <div class="flow">
+        <div class="step"><div class="n">01</div><b>站点级采样</b><span>发现代表性上下游页面</span></div>
+        <div class="step"><div class="n">02</div><b>截图 + 计算样式</b><span>单次加载，多视口截图并抽真实样式</span></div>
+        <div class="step"><div class="n">03</div><b>去噪成 token</b><span>聚类 / 吸附 / 归纳成设计系统</span></div>
+        <div class="step"><div class="n">04</div><b>合成设计语言</b><span>本地模型解释与命名</span></div>
+        <div class="step"><div class="n">05</div><b>打包 .stylepack</b><span>含可双击浏览的 preview.html</span></div>
+      </div>
+    </section>
+
+    <section id="vision">
+      <div class="sec-h">Model & Vision</div>
+      <h2 class="sec-title">用什么模型、有没有视觉，App 里一目了然</h2>
+      <div class="split">
+        <div>
+          <p style="color:var(--muted);font-size:15px;margin:0">画廊顶栏的模型徽章实时显示当前调用的模型与视觉能力。视觉能力不是靠猜——而是<b style="color:var(--fg)">发送一张纯色图让模型识别颜色的真实探测</b>：答对即支持、答错或自述“看不到图”即无视觉。</p>
+          <ul>
+            <li><span><b>配置模型 → 真实上游</b>：如 claude-opus-5[1M] → mimo-v2.5-pro</span></li>
+            <li><span><b>视觉能力</b>：支持 / 无视觉 / 未知，并标注判定来源</span></li>
+            <li><span><b>探测回执</b>：展示模型原话，连通状态、端点、配置来源一并可见</span></li>
+            <li><span><b>可重新探测</b>：切换上游模型后一键刷新</span></li>
+          </ul>
+        </div>
+        <img src="assets/model.png" alt="模型与视觉能力弹窗"/>
+      </div>
+    </section>
+
+    <section>
+      <div class="band">
+        <h2>现在就试试</h2>
+        <p>下载桌面版，或 clone 仓库用 CLI 提炼你喜欢的第一个网站。</p>
+        <div class="cta">
+          <a class="btn primary lg" href="https://github.com/DamonAmber/haokan-design/releases/latest" target="_blank" rel="noopener">⤓ 下载 macOS 版（.dmg）</a>
+          <a class="btn lg" href="https://github.com/DamonAmber/haokan-design#readme" target="_blank" rel="noopener">阅读文档</a>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <div class="wrap foot">
+      <span>© 2026 Haokan · 数值经确定性抽取，风格由本地模型提炼</span>
+      <span><a href="https://github.com/DamonAmber/haokan-design" target="_blank" rel="noopener">GitHub</a> · <a href="https://github.com/DamonAmber/haokan-design/releases" target="_blank" rel="noopener">所有版本</a></span>
+    </div>
+  </footer>
+</body>
+</html>
