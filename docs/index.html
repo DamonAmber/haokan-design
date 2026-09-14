@@ -171,7 +171,7 @@
         <a href="https://github.com/DamonAmber/haokan-design" target="_blank" rel="noopener">GitHub</a>
       </nav>
       <div class="right">
-        <a class="btn primary" href="https://github.com/DamonAmber/haokan-design/releases/latest" target="_blank" rel="noopener">下载 macOS 版</a>
+        <a class="btn primary js-download" href="https://github.com/DamonAmber/haokan-design/releases/latest" target="_blank" rel="noopener">下载 macOS 版</a>
       </div>
     </div>
   </header>
@@ -182,7 +182,7 @@
       <h1>把<span class="g">好看的网页</span>，<br>提炼成可复用的设计资产</h1>
       <p class="lead">Haokan 从任意网站抽取真实的颜色、字体、间距、圆角、阴影与动效，去噪成一套 <b style="color:var(--fg)">设计 token（.stylepack）</b>，用来约束 AI 编码工具的产出，从源头消除“AI 味”。</p>
       <div class="cta">
-        <a class="btn primary lg" href="https://github.com/DamonAmber/haokan-design/releases/latest" target="_blank" rel="noopener">⤓ 下载 macOS 版（Apple Silicon）</a>
+        <a class="btn primary lg js-download" href="https://github.com/DamonAmber/haokan-design/releases/latest" target="_blank" rel="noopener">⤓ 下载 macOS 版（Apple Silicon）</a>
         <a class="btn lg" href="https://github.com/DamonAmber/haokan-design" target="_blank" rel="noopener">在 GitHub 查看源码</a>
       </div>
       <div class="subnote">macOS · 仅 Apple Silicon（arm64），已由 Developer ID 签名并公证，下载后可直接打开。也可用 CLI：<code>node src/cli.js &lt;url&gt;</code></div>
@@ -309,7 +309,7 @@
         <h2>现在就试试</h2>
         <p>下载桌面版，或 clone 仓库用 CLI 提炼你喜欢的第一个网站。</p>
         <div class="cta">
-          <a class="btn primary lg" href="https://github.com/DamonAmber/haokan-design/releases/latest" target="_blank" rel="noopener">⤓ 下载 macOS 版（Apple Silicon）</a>
+          <a class="btn primary lg js-download" href="https://github.com/DamonAmber/haokan-design/releases/latest" target="_blank" rel="noopener">⤓ 下载 macOS 版（Apple Silicon）</a>
           <a class="btn lg" href="https://github.com/DamonAmber/haokan-design#readme" target="_blank" rel="noopener">阅读文档</a>
         </div>
       </div>
@@ -322,5 +322,26 @@
       <span><a href="https://github.com/DamonAmber/haokan-design" target="_blank" rel="noopener">GitHub</a> · <a href="https://github.com/DamonAmber/haokan-design/releases" target="_blank" rel="noopener">所有版本</a></span>
     </div>
   </footer>
+
+  <script>
+    // 让「下载」按钮直接下载最新 dmg：查最新 Release 的 dmg 直链并写回 href。
+    // 失败或禁用 JS 时，href 保底指向 releases 页，功能不受影响。
+    (function () {
+      fetch("https://api.github.com/repos/DamonAmber/haokan-design/releases/latest", {
+        headers: { Accept: "application/vnd.github+json" },
+      })
+        .then(function (r) { return r.ok ? r.json() : null; })
+        .then(function (rel) {
+          if (!rel || !rel.assets) return;
+          var dmg = rel.assets.filter(function (a) { return /\.dmg$/i.test(a.name); })[0];
+          if (!dmg || !dmg.browser_download_url) return;
+          document.querySelectorAll("a.js-download").forEach(function (a) {
+            a.href = dmg.browser_download_url;
+            a.removeAttribute("target"); // 直接下载，无需新开标签
+          });
+        })
+        .catch(function () { /* 保底：保持指向 releases/latest */ });
+    })();
+  </script>
 </body>
 </html>
