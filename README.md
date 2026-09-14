@@ -88,8 +88,10 @@ npm run dist:dir     # 仅生成未压缩的 .app（更快，便于本地试用�
 ### 下载与发布
 
 - **下载**：预编译 dmg 见 [Releases](https://github.com/DamonAmber/haokan-design/releases)，提供 **Apple Silicon (arm64)** 与 **Intel (x64)** 两种；或从[官网](https://damonamber.github.io/haokan-design/)一键下载最新版。
-- **发布**：打 `vX.Y.Z` tag 即触发 GitHub Actions 在 arm64 / x64 双 runner 上构建 dmg 并发布到对应 Release。
-- **签名**：本地打包用 Developer ID 自动签名并启用 Hardened Runtime；正式对外版本建议开启公证。完整流程、CI Secrets 与公证配置见 [`.kiro/steering/release-and-publish.md`](.kiro/steering/release-and-publish.md)。
+- **发布分工（签名凭据不进 CI）**：
+  - **arm64**：维护者本地用 Developer ID **签名 + 公证**后上传，下载即开、无 Gatekeeper 警告。
+  - **x64**：由 GitHub Actions 在 Intel runner 上构建**未签名**包（本机 arm64 无法本地打出可用的 x64），Intel 用户首次打开需右键「打开」。
+- **发版**：改 `version` → 推 tag（触发 CI 出 x64）→ 本地打 arm64 并公证 → 上传到同一 Release。完整可照抄流程见 [`.kiro/steering/release-and-publish.md`](.kiro/steering/release-and-publish.md)。
 
 ## 设计 lint —— 校验闭环（消除 AI 味）
 
