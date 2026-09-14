@@ -115,7 +115,7 @@
   /* gallery mock */
   .mg-top{display:flex;align-items:center;gap:14px;padding:13px 18px;border-bottom:1px solid var(--line)}
   .mg-brand{display:flex;align-items:center;gap:9px;font-weight:700;font-size:15px;white-space:nowrap}
-  .mg-brand .lg{width:22px;height:22px;border-radius:7px;background:conic-gradient(from 210deg,#ff9f0a,#ff375f,#bf5af2,#0a84ff);box-shadow:0 1px 4px rgba(0,0,0,.5)}
+  .mg-brand .lg{width:22px;height:22px;border-radius:7px;display:block;box-shadow:0 1px 4px rgba(0,0,0,.5)}
   .mg-brand .sub{font-weight:500;font-size:12.5px;color:var(--fg3);border-left:1px solid var(--line);padding-left:9px}
   .mg-search{flex:1;min-width:0;height:34px;display:flex;align-items:center;padding:0 14px;color:var(--fg3);font-size:12.5px;background:var(--fill);border:1px solid var(--line);border-radius:10px;overflow:hidden;white-space:nowrap}
   .mg-actions{display:flex;align-items:center;gap:9px}
@@ -182,17 +182,17 @@
       <h1>把<span class="g">好看的网页</span>，<br>提炼成可复用的设计资产</h1>
       <p class="lead">Haokan 从任意网站抽取真实的颜色、字体、间距、圆角、阴影与动效，去噪成一套 <b style="color:var(--fg)">设计 token（.stylepack）</b>，用来约束 AI 编码工具的产出，从源头消除“AI 味”。</p>
       <div class="cta">
-        <a class="btn primary lg" href="https://github.com/DamonAmber/haokan-design/releases/latest" target="_blank" rel="noopener">⤓ 下载 macOS 版（.dmg）</a>
+        <a class="btn primary lg" href="https://github.com/DamonAmber/haokan-design/releases/latest" target="_blank" rel="noopener">⤓ 下载 macOS 版（Apple Silicon）</a>
         <a class="btn lg" href="https://github.com/DamonAmber/haokan-design" target="_blank" rel="noopener">在 GitHub 查看源码</a>
       </div>
-      <div class="subnote">macOS · 应用未签名，首次打开请右键点图标选“打开”，或运行 <code>xattr -dr com.apple.quarantine /Applications/Haokan.app</code>。也可用 CLI：<code>node src/cli.js &lt;url&gt;</code></div>
+      <div class="subnote">macOS · 仅 Apple Silicon（arm64），已由 Developer ID 签名并公证，下载后可直接打开。也可用 CLI：<code>node src/cli.js &lt;url&gt;</code></div>
     </section>
 
     <div class="shot">
       <div class="mock mock-gallery" role="img" aria-label="Haokan 设计资产库画廊界面示意">
         <div class="mock-bar"><span class="tl r"></span><span class="tl y"></span><span class="tl g"></span></div>
         <div class="mg-top">
-          <div class="mg-brand"><span class="lg"></span>Haokan<span class="sub">设计资产库</span></div>
+          <div class="mg-brand"><img class="lg" src="assets/icon.svg" alt=""/>Haokan<span class="sub">设计资产库</span></div>
           <div class="mg-search">搜索名称 / 来源 / 标签 / 风格描述…</div>
           <div class="mg-actions">
             <span class="mg-b primary">＋ 从 URL 提炼</span>
@@ -309,7 +309,7 @@
         <h2>现在就试试</h2>
         <p>下载桌面版，或 clone 仓库用 CLI 提炼你喜欢的第一个网站。</p>
         <div class="cta">
-          <a class="btn primary lg" href="https://github.com/DamonAmber/haokan-design/releases/latest" target="_blank" rel="noopener">⤓ 下载 macOS 版（.dmg）</a>
+          <a class="btn primary lg" href="https://github.com/DamonAmber/haokan-design/releases/latest" target="_blank" rel="noopener">⤓ 下载 macOS 版（Apple Silicon）</a>
           <a class="btn lg" href="https://github.com/DamonAmber/haokan-design#readme" target="_blank" rel="noopener">阅读文档</a>
         </div>
       </div>

@@ -87,11 +87,10 @@ npm run dist:dir     # 仅生成未压缩的 .app（更快，便于本地试用�
 
 ### 下载与发布
 
-- **下载**：预编译 dmg 见 [Releases](https://github.com/DamonAmber/haokan-design/releases)，提供 **Apple Silicon (arm64)** 与 **Intel (x64)** 两种；或从[官网](https://damonamber.github.io/haokan-design/)一键下载最新版。
-- **发布分工（签名凭据不进 CI）**：
-  - **arm64**：维护者本地用 Developer ID **签名 + 公证**后上传，下载即开、无 Gatekeeper 警告。
-  - **x64**：由 GitHub Actions 在 Intel runner 上构建**未签名**包（本机 arm64 无法本地打出可用的 x64），Intel 用户首次打开需右键「打开」。
-- **发版**：改 `version` → 推 tag（触发 CI 出 x64）→ 本地打 arm64 并公证 → 上传到同一 Release。完整可照抄流程见 [`.kiro/steering/release-and-publish.md`](.kiro/steering/release-and-publish.md)。
+- **下载**：预编译 dmg 见 [Releases](https://github.com/DamonAmber/haokan-design/releases)，仅提供 **Apple Silicon (arm64)**；或从[官网](https://damonamber.github.io/haokan-design/)一键下载最新版。
+  > **仅支持 Apple Silicon（M 系列）Mac**。Intel Mac 无法运行——arm64 包不能在 Intel 上执行，Rosetta 也不支持反向翻译。
+- **签名**：arm64 dmg 由维护者本地用 Developer ID **签名 + 公证**，下载即开、无 Gatekeeper 警告。签名凭据只留本机、绝不进 CI。
+- **发版**：改 `version` → 提交推送 `main` → 打 tag → 本地 `npm run dist -- --mac --arm64`（自动签名）→ `notarytool` 公证 + `stapler` 装订 → 上传到 Release。完整可照抄流程见 [`.kiro/steering/release-and-publish.md`](.kiro/steering/release-and-publish.md)。
 
 ## 设计 lint —— 校验闭环（消除 AI 味）
 
@@ -148,7 +147,7 @@ npm test        # node --test，运行 test/ 下全部用例
 - ~~次字体回退族硬编码为 `serif`~~ **已修复**：现按字体类型（等宽 / 衬线 / 无衬线）自动选择回退族，并新增独立的**展示/标题字体**（`--font-display`）识别，避免大标题误用正文/等宽字体。
 - 页面聚类用 URL 路径启发式，未做 DOM 模板指纹去重。
 - lint 目前以 CSS/内联样式的颜色/圆角/字体为主，Tailwind class（如 `rounded-lg`）与 JS 变量间接引用暂未深度解析。
-- 代码签名已接入（本地 Developer ID 自动签名 + Hardened Runtime，CI 可经 Secrets 启用）；对外正式版建议开启**公证**以免 Gatekeeper 警告，配置见发版规范。应用内提炼需本机已装 Playwright Chromium。
+- 代码签名 + 公证已接入（本地 Developer ID 签名 + Hardened Runtime + `notarytool` 公证）：对外 arm64 版下载即开、无 Gatekeeper 警告，签名凭据只留本机。应用内提炼需本机已装 Playwright Chromium。
 
 ## 目录
 
