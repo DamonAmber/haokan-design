@@ -8,7 +8,7 @@
 <link rel="icon" href="assets/icon.svg"/>
 <meta property="og:title" content="Haokan · 设计资产提炼工具"/>
 <meta property="og:description" content="把好看的网页提炼成可复用的设计资产，约束 AI 编码工具产出、消除 AI 味。"/>
-<meta property="og:image" content="assets/gallery.png"/>
+<meta property="og:image" content="assets/icon.png"/>
 <style>
   :root{
     --bg:#0b0b0f; --fg:#f5f5f7; --muted:rgba(235,235,245,.62); --fg3:rgba(235,235,245,.34);
@@ -105,6 +105,59 @@
   .foot{display:flex;flex-wrap:wrap;gap:12px;align-items:center;justify-content:space-between;padding:26px 0;color:var(--fg3);font-size:13px}
   .foot a{color:var(--muted)}.foot a:hover{color:var(--fg)}
   .kbd{font-family:ui-monospace,SFMono-Regular,Menlo,monospace}
+
+  /* ---- UI mockups: 纯 HTML/CSS 绘制，替代真实截图，不含任何真实信息 ---- */
+  .mock{position:relative;background:#0c0c11;font-size:13px;text-align:left}
+  .mock-bar{display:flex;align-items:center;gap:8px;height:34px;padding:0 14px;border-bottom:1px solid var(--line);background:rgba(20,20,26,.7)}
+  .mock-bar .tl{width:11px;height:11px;border-radius:50%;display:inline-block}
+  .tl.r{background:#ff5f57}.tl.y{background:#febc2e}.tl.g{background:#28c840}
+
+  /* gallery mock */
+  .mg-top{display:flex;align-items:center;gap:14px;padding:13px 18px;border-bottom:1px solid var(--line)}
+  .mg-brand{display:flex;align-items:center;gap:9px;font-weight:700;font-size:15px;white-space:nowrap}
+  .mg-brand .lg{width:22px;height:22px;border-radius:7px;background:conic-gradient(from 210deg,#ff9f0a,#ff375f,#bf5af2,#0a84ff);box-shadow:0 1px 4px rgba(0,0,0,.5)}
+  .mg-brand .sub{font-weight:500;font-size:12.5px;color:var(--fg3);border-left:1px solid var(--line);padding-left:9px}
+  .mg-search{flex:1;min-width:0;height:34px;display:flex;align-items:center;padding:0 14px;color:var(--fg3);font-size:12.5px;background:var(--fill);border:1px solid var(--line);border-radius:10px;overflow:hidden;white-space:nowrap}
+  .mg-actions{display:flex;align-items:center;gap:9px}
+  .mg-b{height:34px;display:inline-flex;align-items:center;padding:0 14px;border-radius:9px;font-size:12.5px;font-weight:550;border:1px solid var(--line);background:var(--fill);white-space:nowrap}
+  .mg-b.primary{background:var(--accent);border-color:transparent;color:#fff}
+  .mg-b.badge{color:var(--muted)}
+  .mg-b.badge::before{content:"";width:7px;height:7px;border-radius:50%;background:var(--fg3);margin-right:7px;display:inline-block}
+  .mg-filters{display:flex;align-items:center;gap:9px;padding:12px 18px;border-bottom:1px solid var(--line);flex-wrap:wrap}
+  .mg-chip{height:30px;display:inline-flex;align-items:center;padding:0 14px;border-radius:var(--pill);font-size:12.5px;color:var(--muted);border:1px solid var(--line);background:var(--fill)}
+  .mg-chip.on{background:#fff;color:#111;border-color:transparent;font-weight:600}
+  .mg-count{margin-left:auto;font-size:12.5px;color:var(--fg3)}
+  .mg-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;padding:18px}
+  .mg-card{background:rgba(255,255,255,.02);border:1px solid var(--line);border-radius:14px;padding:12px}
+  .mg-cover{display:grid;grid-template-columns:1.5fr 1fr;grid-template-rows:1fr 1fr;gap:6px;height:148px;margin-bottom:12px}
+  .mg-cover i{border-radius:7px;background:linear-gradient(135deg,rgba(255,255,255,.11),rgba(255,255,255,.03))}
+  .mg-cover i:first-child{grid-row:1 / span 2}
+  .mg-src{display:flex;align-items:center;gap:8px;font-weight:600;font-size:13.5px;margin-bottom:7px}
+  .mg-src .dot{width:9px;height:9px;border-radius:3px;flex:none}
+  .mg-desc{font-size:12px;color:var(--muted);margin:0 0 11px;line-height:1.5}
+  .mg-tags{display:flex;flex-wrap:wrap;gap:6px}
+  .mg-tags span{font-size:11px;color:var(--muted);background:var(--fill);border:1px solid var(--line);border-radius:6px;padding:3px 8px}
+  @media(max-width:640px){.mg-grid{grid-template-columns:1fr 1fr;gap:12px;padding:12px}.mg-search{display:none}.mg-top{gap:10px}}
+
+  /* model & vision mock */
+  .mock-model{border-radius:var(--radius-lg);border:1px solid var(--line-strong);background:var(--glass-2);
+    backdrop-filter:var(--blur);-webkit-backdrop-filter:var(--blur);box-shadow:var(--shadow-lg),var(--hair);padding:22px 22px 18px}
+  .mm-title{font-size:17px;font-weight:700;margin:0 0 8px}
+  .mm-desc{font-size:12.5px;color:var(--muted);margin:0 0 14px;line-height:1.55}
+  .mm-rows{margin:0}
+  .mm-row{display:grid;grid-template-columns:76px 1fr;gap:14px;align-items:start;padding:11px 0;border-top:1px solid var(--line)}
+  .mm-row:first-child{border-top:0}
+  .mm-row dt{font-size:12.5px;color:var(--muted)}
+  .mm-row dd{margin:0;font-size:13px}
+  .mm-row dd.strong{font-weight:650}
+  .mm-row dd.ok{color:var(--green)}
+  .mm-row dd .dim{color:var(--fg3)}
+  .mm-mono{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12px;word-break:break-all}
+  .mm-badge-no{display:inline-block;font-size:11px;font-weight:700;color:#ff453a;border:1px solid rgba(255,69,58,.5);
+    background:rgba(255,69,58,.12);border-radius:6px;padding:2px 7px;margin-right:8px}
+  .mm-ta{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:11.5px;color:var(--muted);line-height:1.55;
+    background:rgba(0,0,0,.25);border:1px solid var(--line);border-radius:8px;padding:10px}
+  .mm-actions{display:flex;justify-content:flex-end;gap:10px;margin-top:16px}
 </style>
 </head>
 <body>
@@ -135,7 +188,66 @@
       <div class="subnote">macOS · 应用未签名，首次打开请右键点图标选“打开”，或运行 <code>xattr -dr com.apple.quarantine /Applications/Haokan.app</code>。也可用 CLI：<code>node src/cli.js &lt;url&gt;</code></div>
     </section>
 
-    <div class="shot"><img src="assets/gallery.png" alt="Haokan 设计资产库画廊"/></div>
+    <div class="shot">
+      <div class="mock mock-gallery" role="img" aria-label="Haokan 设计资产库画廊界面示意">
+        <div class="mock-bar"><span class="tl r"></span><span class="tl y"></span><span class="tl g"></span></div>
+        <div class="mg-top">
+          <div class="mg-brand"><span class="lg"></span>Haokan<span class="sub">设计资产库</span></div>
+          <div class="mg-search">搜索名称 / 来源 / 标签 / 风格描述…</div>
+          <div class="mg-actions">
+            <span class="mg-b primary">＋ 从 URL 提炼</span>
+            <span class="mg-b">导入</span>
+            <span class="mg-b badge">模型…</span>
+          </div>
+        </div>
+        <div class="mg-filters">
+          <span class="mg-chip on">全部</span>
+          <span class="mg-chip">★ 收藏 · 0</span>
+          <span class="mg-chip">swiss · 3</span>
+          <span class="mg-chip">editorial · 2</span>
+          <span class="mg-chip">minimal · 2</span>
+          <span class="mg-count">6 / 6 个资产</span>
+        </div>
+        <div class="mg-grid">
+          <div class="mg-card">
+            <div class="mg-cover"><i></i><i></i><i></i></div>
+            <div class="mg-src"><span class="dot" style="background:#ff9f0a"></span>monogrid.studio</div>
+            <p class="mg-desc">以网格秩序与克制留白为核心的功能主义界面。</p>
+            <div class="mg-tags"><span>克制</span><span>功能主义</span><span>swiss</span></div>
+          </div>
+          <div class="mg-card">
+            <div class="mg-cover"><i></i><i></i><i></i></div>
+            <div class="mg-src"><span class="dot" style="background:#bf5af2"></span>lumen.app</div>
+            <p class="mg-desc">深色高对比的工具型产品界面，强调信息密度。</p>
+            <div class="mg-tags"><span>深色主题</span><span>工具感</span><span>minimal</span></div>
+          </div>
+          <div class="mg-card">
+            <div class="mg-cover"><i></i><i></i><i></i></div>
+            <div class="mg-src"><span class="dot" style="background:#0a84ff"></span>atelier.press</div>
+            <p class="mg-desc">编辑型无衬线排版系统，紧凑网格与强对比标题。</p>
+            <div class="mg-tags"><span>editorial</span><span>无衬线</span><span>紧凑网格</span></div>
+          </div>
+          <div class="mg-card">
+            <div class="mg-cover"><i></i><i></i><i></i></div>
+            <div class="mg-src"><span class="dot" style="background:#30d158"></span>northfold.co</div>
+            <p class="mg-desc">柔和中性色与大圆角卡片构成的亲和界面。</p>
+            <div class="mg-tags"><span>亲和</span><span>圆角</span><span>minimal</span></div>
+          </div>
+          <div class="mg-card">
+            <div class="mg-cover"><i></i><i></i><i></i></div>
+            <div class="mg-src"><span class="dot" style="background:#ff375f"></span>vivid.gallery</div>
+            <p class="mg-desc">高饱和强调色与大标题驱动的视觉冲击型首页。</p>
+            <div class="mg-tags"><span>高对比</span><span>展示字体</span><span>editorial</span></div>
+          </div>
+          <div class="mg-card">
+            <div class="mg-cover"><i></i><i></i><i></i></div>
+            <div class="mg-src"><span class="dot" style="background:#64d2ff"></span>cobalt.dev</div>
+            <p class="mg-desc">冷色调开发者文档站，稳重清晰的信息层级。</p>
+            <div class="mg-tags"><span>冷色调</span><span>文档</span><span>swiss</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
 
     <section id="features">
       <div class="sec-h">Features</div>
@@ -175,7 +287,20 @@
             <li><span><b>可重新探测</b>：切换上游模型后一键刷新</span></li>
           </ul>
         </div>
-        <img src="assets/model.png" alt="模型与视觉能力弹窗"/>
+        <div class="mock mock-model" role="img" aria-label="模型与视觉能力弹窗界面示意">
+          <h4 class="mm-title">模型与视觉能力</h4>
+          <p class="mm-desc">画廊调用的本地模型（读取 Claude Code 当前生效配置），以及上游是否具备图像视觉能力——通过发送一张纯色图请模型识别颜色真实探测得出。</p>
+          <dl class="mm-rows">
+            <div class="mm-row"><dt>连通状态</dt><dd class="ok">✓ 已连通</dd></div>
+            <div class="mm-row"><dt>配置模型</dt><dd>claude-opus-5[1M] <span class="dim">(opus)</span></dd></div>
+            <div class="mm-row"><dt>实际上游</dt><dd class="strong">mimo-v2.5-pro</dd></div>
+            <div class="mm-row"><dt>视觉能力</dt><dd><span class="mm-badge-no">无视觉</span>真实探测</dd></div>
+            <div class="mm-row"><dt>探测回执</dt><dd><div class="mm-ta">I'm unable to view the image you've shared — it appears as "Unsupported Image" on my end. Could you try re-uploading it?</div></dd></div>
+            <div class="mm-row"><dt>端点</dt><dd class="mm-mono">http://127.0.0.1:15721/v1/messages</dd></div>
+            <div class="mm-row"><dt>配置来源</dt><dd class="mm-mono">~/.claude/settings.json</dd></div>
+          </dl>
+          <div class="mm-actions"><span class="mg-b">重新探测</span><span class="mg-b primary">关闭</span></div>
+        </div>
       </div>
     </section>
 
