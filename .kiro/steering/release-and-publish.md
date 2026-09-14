@@ -20,6 +20,7 @@ description: 当任务涉及版本发布、打 tag、构建/打包 dmg、代码�
 
 - x64 为未签名包，Intel 用户首次打开需右键「打开」。这是「凭据不进 CI」的取舍，可接受。
 - **不要**试图在 arm64 本地交叉打 x64（sharp 会是 arm64，运行崩溃）。
+- ⏳ GitHub 免费的 Intel（`macos-13`）runner 排队时间不稳定，x64 可能等十几分钟甚至更久才开始构建；完成后会**自动追加**到该 tag 的 Release，无需人工干预。因此 arm64 发完即可先对外，x64 稍后到齐。查是否到齐：`gh release view vX.Y.Z --json assets -q '.assets[].name'`。
 
 ## 2. 版本号（SemVer）
 
