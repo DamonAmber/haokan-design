@@ -1,7 +1,8 @@
 // Electron 主进程：在进程内启动画廊服务并加载它，包成双击即用的桌面 App。
-const { app, BrowserWindow, ipcMain, dialog, shell, nativeImage } = require("electron");
+const { app, BrowserWindow, Menu, ipcMain, dialog, shell, nativeImage } = require("electron");
 const path = require("path");
 const { pathToFileURL } = require("url");
+const { initAutoUpdater, checkForUpdates } = require("./updater.cjs");
 
 const ICON_PATH = path.join(__dirname, "..", "build", "icon.png");
 
@@ -53,6 +54,49 @@ function createWindow() {
   }
 }
 
+// 应用菜单：保留标准角色，并加入「检查更新…」
+function buildAppMenu() {
+  const isMac = process.platform === "darwin";
+  const template = [
+    ...(isMac
+      ? [
+          {
+            label: app.name,
+            submenu: [
+              { role: "about" },
+              { label: "检查更新…", click: () => checkForUpdates(true) },
+              { type: "separator" },
+              { role: "services" },
+              { type: "separator" },
+              { role: "hide" },
+              { role: "hideOthers" },
+              { role: "unhide" },
+              { type: "separator" },
+              { role: "quit" },
+            ],
+          },
+        ]
+      : []),
+    { role: "editMenu" },
+    { role: "viewMenu" },
+    { role: "windowMenu" },
+    {
+      role: "help",
+      submenu: [
+        ...(!isMac ? [{ label: "检查更新…", click: () => checkForUpdates(true) }] : []),
+        { label: "GitHub 仓库", click: () => shell.openExternal("https://github.com/DamonAmber/haokan-design") },
+      ],
+    },
+  ];
+  Menu.setApplicationMenu(Menu.buildFromTemplate(template));
+}
+
+// 手动检查更新（供画廊 Web UI 通过 preload 触发）
+ipcMain.handle("check-for-updates", async () => {
+  checkForUpdates(true);
+  return true;
+});
+
 // 原生文件/目录选择
 ipcMain.handle("pick-stylepack", async () => {
   const r = await dialog.showOpenDialog(win, {
@@ -75,12 +119,17 @@ app.whenReady().then(async () => {
       /* ignore */
     }
   }
+  buildAppMenu();
   try {
     await startBackend();
   } catch (e) {
     console.error("后台服务启动失败：", e);
   }
   createWindow();
+  // 自动更新：仅打包后生效，冒烟测试时跳过
+  if (!process.env.HAOKAN_SMOKE) {
+    initAutoUpdater(() => win);
+  }
   app.on("activate", () => {
     if (BrowserWindow.getAllWindows().length === 0) createWindow();
   });

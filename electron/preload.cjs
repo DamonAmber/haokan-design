@@ -4,4 +4,5 @@ const { contextBridge, ipcRenderer } = require("electron");
 contextBridge.exposeInMainWorld("haokanNative", {
   pickStylepack: () => ipcRenderer.invoke("pick-stylepack"),
   pickDirectory: () => ipcRenderer.invoke("pick-directory"),
+  checkForUpdates: () => ipcRenderer.invoke("check-for-updates"),
 });

@@ -1,6 +1,6 @@
 {
   "name": "haokan-design",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "private": true,
   "type": "module",
   "main": "electron/main.cjs",
@@ -23,6 +23,7 @@
   },
   "dependencies": {
     "adm-zip": "^0.5.16",
+    "electron-updater": "^6.8.9",
     "playwright": "^1.49.1",
     "sharp": "^0.33.5"
   },
@@ -35,6 +36,7 @@
     "productName": "Haokan",
     "asar": false,
     "artifactName": "${productName}-${version}-${arch}.${ext}",
+    "afterSign": "build/notarize.cjs",
     "directories": {
       "output": "release"
     },
@@ -43,10 +45,21 @@
       "src/**/*",
       "package.json"
     ],
+    "publish": [
+      {
+        "provider": "github",
+        "owner": "DamonAmber",
+        "repo": "haokan-design"
+      }
+    ],
     "mac": {
       "target": [
         {
           "target": "dmg",
+          "arch": "arm64"
+        },
+        {
+          "target": "zip",
           "arch": "arm64"
         }
       ],
