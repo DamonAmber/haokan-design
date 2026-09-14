@@ -421,8 +421,9 @@ async function handle(req, res, PORT) {
   const pathname = decodeURIComponent(u.pathname);
 
   if (pathname === "/" && req.method === "GET") return serveStatic(res, UI_HTML);
-  if (pathname === "/icon.svg" && req.method === "GET") return serveStatic(res, path.join(ROOT, "build", "icon.svg"));
-  if (pathname === "/icon.png" && req.method === "GET") return serveStatic(res, path.join(ROOT, "build", "icon.png"));
+  // 图标随 src/gallery 一起打包（build/ 目录不会进 App，勿从那里取，否则打包后 404）
+  if (pathname === "/icon.svg" && req.method === "GET") return serveStatic(res, path.join(ROOT, "src", "gallery", "icon.svg"));
+  if (pathname === "/icon.png" && req.method === "GET") return serveStatic(res, path.join(ROOT, "src", "gallery", "icon.png"));
 
   if (pathname === "/api/library" && req.method === "GET") {
     return send(res, 200, { packs: scanLibrary(), outputRoot: OUTPUT_ROOT });
