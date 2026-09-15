@@ -97,6 +97,8 @@ export function buildTokens(system, meta = {}) {
             }
           : null,
       },
+      // 布局原型：构图/结构信号（容器宽/Hero 构图/栅格/对齐/留白/配图），驱动样张与布局规范
+      "haokan.layout": system.layout || null,
     },
   };
 }

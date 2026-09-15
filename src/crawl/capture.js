@@ -280,6 +280,203 @@ function collectStyles() {
   };
 }
 
+// 布局指纹：确定性地抽取"构图/结构"信号——容器宽度、区块序列、Hero 构图、
+// 栅格列数、图片密度、对齐倾向、留白节奏。这些比颜色更决定"看起来像不像它"，
+// 且不依赖模型视觉能力（无视觉档也能拿到）。
+function collectLayout() {
+  const vw = window.innerWidth || 1440;
+  const vh = window.innerHeight || 900;
+  const pageH = Math.max(document.documentElement.scrollHeight, document.body.scrollHeight, vh);
+  const vis = (el) => {
+    const cs = getComputedStyle(el);
+    if (cs.display === "none" || cs.visibility === "hidden" || parseFloat(cs.opacity) === 0) return false;
+    const r = el.getBoundingClientRect();
+    return r.width > 0 && r.height > 0;
+  };
+  const hasDirectText = (el) => {
+    for (const n of el.childNodes) if (n.nodeType === 3 && n.textContent.trim().length > 1) return true;
+    return false;
+  };
+  const isMedia = (el) => {
+    if (["IMG", "VIDEO", "CANVAS", "SVG", "PICTURE"].includes(el.tagName)) return true;
+    const bi = getComputedStyle(el).backgroundImage;
+    return bi && bi !== "none" && /url\(/.test(bi);
+  };
+
+  // 1) 容器宽度：承载内容的"居中块"的代表宽度
+  const widths = [];
+  let seen = 0;
+  for (const el of document.querySelectorAll("main,section,article,header,footer,div")) {
+    if (seen++ > 4000) break;
+    if (!vis(el)) continue;
+    const r = el.getBoundingClientRect();
+    if (r.width < 360 || r.width > vw + 2) continue;
+    const leftGap = r.left, rightGap = vw - r.right;
+    const centered = Math.abs(leftGap - rightGap) < 48 && leftGap >= 8;
+    if (centered && r.width < vw * 0.985) widths.push(Math.round(r.width));
+  }
+  widths.sort((a, b) => a - b);
+  const containerWidth = widths.length ? widths[Math.floor(widths.length * 0.85)] : Math.round(vw * 0.9);
+
+  // 2) 顶层区块（全宽带）序列
+  const bandEls = [];
+  const collectBands = (parent) => {
+    for (const c of parent.children) {
+      if (["SCRIPT", "STYLE", "NOSCRIPT"].includes(c.tagName)) continue;
+      if (!vis(c)) continue;
+      const r = c.getBoundingClientRect();
+      if (r.height < 40 || r.width < vw * 0.55) continue;
+      bandEls.push(c);
+    }
+  };
+  const mainEl = document.querySelector("main") || document.querySelector("[role=main]");
+  collectBands(document.body);
+  if (mainEl && mainEl !== document.body) collectBands(mainEl);
+  // 去重 + 按纵向位置排序
+  const uniq = [...new Set(bandEls)].sort((a, b) => a.getBoundingClientRect().top - b.getBoundingClientRect().top).slice(0, 14);
+
+  // 找页面最大标题（用于 Hero 判定）
+  let biggest = null, biggestSize = 0;
+  const heads = document.querySelectorAll("h1,h2,h3,[class*='title'],[class*='head'],[class*='hero']");
+  let hc = 0;
+  for (const h of heads) {
+    if (hc++ > 400) break;
+    if (!vis(h) || !h.textContent.trim()) continue;
+    const r = h.getBoundingClientRect();
+    if (r.top > vh * 1.6) continue; // 仅看首屏附近
+    const fs = parseFloat(getComputedStyle(h).fontSize) || 0;
+    if (fs > biggestSize) { biggestSize = fs; biggest = h; }
+  }
+
+  const classify = (el) => {
+    const r = el.getBoundingClientRect();
+    const links = el.querySelectorAll("a").length;
+    const tag = el.tagName;
+    if (tag === "FOOTER") return "footer";
+    if (tag === "NAV") return "nav";
+    if (r.top < 110 && r.height < 170 && links >= 2) return "nav";
+    if (r.top + window.scrollY > pageH - vh * 0.6 && links >= 4 && r.height < vh) return "footer";
+    if (biggest && el.contains(biggest)) return "hero";
+    // 栅格：直接子里有一排(≥2)等高同类块
+    const kids = [...el.children].filter((k) => vis(k) && k.getBoundingClientRect().height > 40);
+    if (kids.length >= 2) {
+      const tops = kids.map((k) => Math.round(k.getBoundingClientRect().top));
+      const firstTop = tops[0];
+      const inRow = tops.filter((t) => Math.abs(t - firstTop) < 24).length;
+      if (inRow >= 2) return "grid";
+    }
+    return "section";
+  };
+
+  const sections = uniq.map((el) => {
+    const r = el.getBoundingClientRect();
+    const cs = getComputedStyle(el);
+    return {
+      type: classify(el),
+      height: Math.round(r.height),
+      padY: Math.round((parseFloat(cs.paddingTop) || 0) + (parseFloat(cs.paddingBottom) || 0)),
+    };
+  });
+
+  // 栅格列数（grid 带里同排块数量的众数）
+  const colCounts = {};
+  for (const el of uniq) {
+    if (classify(el) !== "grid") continue;
+    const kids = [...el.children].filter((k) => vis(k) && k.getBoundingClientRect().height > 40);
+    if (!kids.length) continue;
+    const firstTop = Math.round(kids[0].getBoundingClientRect().top);
+    const inRow = kids.filter((k) => Math.abs(Math.round(k.getBoundingClientRect().top) - firstTop) < 24).length;
+    if (inRow >= 2) colCounts[inRow] = (colCounts[inRow] || 0) + 1;
+  }
+  let gridColumns = 0, best = 0;
+  for (const [n, c] of Object.entries(colCounts)) if (c > best) { best = c; gridColumns = +n; }
+
+  // Hero 构图
+  // 默认按"左对齐"处理：绝大多数现代站点的 Hero 是左对齐大标题，且当页面没有可识别的首屏标题时，
+  // 左对齐比居中更安全（与 demo.js 端的默认保持一致，避免两端默认值不一致导致的误居中）。
+  let heroType = "left", heroHasImage = false, heroHeadlineAlign = "left";
+  if (biggest) {
+    const heroBand = uniq.find((el) => el.contains(biggest)) || biggest.parentElement || biggest;
+    const hr = heroBand.getBoundingClientRect();
+    const hh = biggest.getBoundingClientRect();
+    heroHeadlineAlign = getComputedStyle(biggest).textAlign;
+    const headCenter = hh.left + hh.width / 2;
+    const bandCenter = hr.left + hr.width / 2;
+    // 侧边大媒体？
+    let media = null, mediaArea = 0;
+    let mc = 0;
+    for (const el of heroBand.querySelectorAll("*")) {
+      if (mc++ > 1200) break;
+      if (!vis(el) || !isMedia(el)) continue;
+      const r = el.getBoundingClientRect();
+      const a = r.width * r.height;
+      if (a > mediaArea) { mediaArea = a; media = r; }
+    }
+    heroHasImage = mediaArea > vw * vh * 0.04;
+    // 居中判定：优先信任标题自身的 text-align。
+    // - 明确 center → 居中；
+    // - 明确 left/right（含 start/end/justify，视觉上仍是左/右起）→ 一律不判居中；
+    // - 仅当对齐不明确时，才退回"标题块几何中心 ≈ Hero 带中心"的启发式。
+    // 这修正了此前的误判：左对齐大标题因其文字块本身很宽、几何中心恰好落在带中心 ±12% 内而被错判为居中。
+    const leftish = /^(left|start|justify)$/.test(heroHeadlineAlign);
+    const rightish = /^(right|end)$/.test(heroHeadlineAlign);
+    const centeredText =
+      /center/.test(heroHeadlineAlign) ||
+      (!leftish && !rightish && Math.abs(headCenter - bandCenter) < hr.width * 0.12);
+    if (heroHasImage && media) {
+      const mediaCenter = media.left + media.width / 2;
+      const opposite = Math.abs(mediaCenter - headCenter) > hr.width * 0.22;
+      heroType = opposite ? "split" : (centeredText ? "centered" : "left");
+    } else {
+      heroType = centeredText ? "centered" : "left";
+    }
+  }
+
+  // 图片密度（全页大图 / 背景图数量，按页高归一）
+  let mediaCount = 0, mel = 0;
+  for (const el of document.querySelectorAll("img,video,picture,svg,[style*='background-image'],[class*='image'],[class*='img'],[class*='bg-']")) {
+    if (mel++ > 3000) break;
+    if (!vis(el) || !isMedia(el)) continue;
+    const r = el.getBoundingClientRect();
+    if (r.width * r.height > 6000) mediaCount++;
+  }
+  const screens = Math.max(1, pageH / vh);
+  const mediaPerScreen = mediaCount / screens;
+  const imagery = mediaPerScreen >= 3 ? "image-forward" : mediaPerScreen >= 1 ? "some" : "minimal";
+
+  // 对齐倾向：标题/正文里 text-align:center 的比例
+  let centerN = 0, totalN = 0, ac = 0;
+  for (const el of document.querySelectorAll("h1,h2,h3,p")) {
+    if (ac++ > 600) break;
+    if (!vis(el) || !el.textContent.trim()) continue;
+    totalN++;
+    if (/center/.test(getComputedStyle(el).textAlign)) centerN++;
+  }
+  const centerRatio = totalN ? centerN / totalN : 0;
+  const alignment = centerRatio > 0.5 ? "centered" : centerRatio > 0.2 ? "mixed" : "left-aligned";
+
+  // 留白节奏：内容带纵向 padding 的中位数 / 视口高
+  const pads = sections.filter((s) => s.type !== "nav" && s.type !== "footer").map((s) => s.padY).filter((p) => p > 0).sort((a, b) => a - b);
+  const medPad = pads.length ? pads[Math.floor(pads.length / 2)] : 0;
+  const rhythmRatio = medPad / vh;
+  const rhythm = rhythmRatio >= 0.16 ? "generous" : rhythmRatio >= 0.08 ? "roomy" : "tight";
+
+  return {
+    containerWidth,
+    heroType,
+    heroHasImage,
+    heroHeadlineAlign: /center|right|left/.test(heroHeadlineAlign) ? heroHeadlineAlign : "left",
+    gridColumns,
+    imagery,
+    mediaPerScreen: +mediaPerScreen.toFixed(2),
+    alignment,
+    centerRatio: +centerRatio.toFixed(2),
+    rhythm,
+    sectionSequence: sections.map((s) => s.type),
+    sectionCount: sections.length,
+  };
+}
+
 // 悬停态 diff：程序化 hover 若干代表性交互元素，对比前后计算样式，抓出"hover 改了什么 + 用什么过渡"
 async function collectHoverEffects(page) {
   const cand = await page.evaluate(() => {
@@ -350,6 +547,13 @@ export async function processPage(context, url, { workDir, index }) {
     result.styles = extracted.styles;
     result.meta = extracted.meta;
     result.title = extracted.meta.title;
+
+    // 抽取布局指纹（确定性构图信号）
+    try {
+      result.layout = await page.evaluate(collectLayout);
+    } catch {
+      result.layout = null;
+    }
 
     // 桌面首屏截图
     const desktopShot = path.join(shotsDir, `p${index}-desktop.png`);

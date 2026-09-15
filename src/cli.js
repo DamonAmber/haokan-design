@@ -82,7 +82,25 @@ async function main() {
   } else {
     log.warn(`模型不可用：${probe.error}（将跳过设计语言合成，仅产出 token）`);
   }
-  emit({ step: "config", status: "done", label: probe.ok ? "本地模型已连通" : "模型不可用（仅抽 token）", percent: 8, model: modelInfo });
+  // 视觉能力探测 → 决定走"视觉档"还是"结构化档"
+  let visionCapable = false;
+  if (probe.ok) {
+    try {
+      const vis = await llm.probeVision({ timeoutMs: 30000 });
+      visionCapable = vis.supported === true;
+      log.detail(`视觉能力：${visionCapable ? "具备（走视觉档：截图接地）" : vis.supported === false ? "不具备（走结构化档：布局指纹）" : "未确定（按结构化档处理）"}`);
+    } catch {
+      visionCapable = false;
+    }
+  }
+  const capabilities = {
+    vision: visionCapable,
+    track: visionCapable ? "vision" : "structural",
+    // 记录"这份资产是被哪个模型提炼的"：配置档位 → 真实上游模型，供画廊按资产展示。
+    model: probe.ok ? { tier: probe.tier, configured: probe.configured, real: probe.real || null } : null,
+    extractedAt: new Date().toISOString(),
+  };
+  emit({ step: "config", status: "done", label: probe.ok ? `本地模型已连通（${visionCapable ? "视觉档" : "结构化档"}）` : "模型不可用（仅抽 token）", percent: 8, model: modelInfo });
 
   // 工作目录
   const workDir = path.join(ROOT, ".work", `${Date.now()}`);
@@ -152,8 +170,9 @@ async function main() {
     let profile;
     if (probe.ok) {
       try {
-        profile = await synthesizeProfile(llm, system, meta);
-        log.ok(`风格定位：${profile.oneLiner || profile.aesthetic || "(已生成)"}`);
+        const shots = okPages.map((p) => p.desktopShot).filter(Boolean);
+        profile = await synthesizeProfile(llm, system, meta, { vision: visionCapable, screenshots: shots });
+        log.ok(`风格定位：${profile.oneLiner || profile.aesthetic || "(已生成)"}（${profile.track === "vision" ? "视觉档" : "结构化档"}）`);
         if (profile.tags?.length) log.detail(`标签: ${profile.tags.join(" / ")}`);
       } catch (err) {
         log.warn(`合成失败：${err.message}（使用兜底 profile）`);
@@ -179,7 +198,7 @@ async function main() {
 
     // 打包
     log.step("打包为 .stylepack");
-    pack = buildPack({ system, tokens, profile, meta, coverPath, pages, outputRoot: args.out });
+    pack = buildPack({ system, tokens, profile, meta, coverPath, pages, outputRoot: args.out, capabilities });
     log.ok(`资产名：${pack.name}`);
     emit({ step: "pack", status: "done", label: "已打包 .stylepack", detail: pack.name, percent: 98 });
   } finally {

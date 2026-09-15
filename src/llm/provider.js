@@ -8,6 +8,42 @@ import os from "node:os";
 const SETTINGS_PATH = path.join(os.homedir(), ".claude", "settings.json");
 const ANTHROPIC_VERSION = "2023-06-01";
 
+// —— App 独立模型配置：让用户在本 App 内配置专属模型，无需依赖 Claude Code ——
+// 存于 ~/.haokan/model.json（npm run gallery 与桌面 App 都可读）。
+const APP_DIR = path.join(os.homedir(), ".haokan");
+const APP_MODEL_PATH = path.join(APP_DIR, "model.json");
+
+export function appModelConfigPath() {
+  return APP_MODEL_PATH;
+}
+export function readAppModelConfig() {
+  try {
+    const c = JSON.parse(fs.readFileSync(APP_MODEL_PATH, "utf8"));
+    return c && typeof c === "object" ? c : null;
+  } catch {
+    return null;
+  }
+}
+export function writeAppModelConfig(cfg = {}) {
+  fs.mkdirSync(APP_DIR, { recursive: true });
+  const clean = {
+    baseURL: String(cfg.baseURL || "").trim().replace(/\/+$/, ""),
+    authToken: String(cfg.authToken || "").trim(),
+    model: String(cfg.model || "").trim(),
+    updatedAt: new Date().toISOString(),
+  };
+  fs.writeFileSync(APP_MODEL_PATH, JSON.stringify(clean, null, 2));
+  return clean;
+}
+export function clearAppModelConfig() {
+  try {
+    fs.rmSync(APP_MODEL_PATH, { force: true });
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 function readSettings() {
   try {
     const raw = fs.readFileSync(SETTINGS_PATH, "utf8");
@@ -17,37 +53,69 @@ function readSettings() {
   }
 }
 
-// 解析当前生效配置
+// 解析当前生效配置。优先级：进程环境变量 > App 独立配置 > Claude Code settings > 默认。
 export function resolveConfig() {
   const settings = readSettings();
   const env = settings.env || {};
+  const app = readAppModelConfig() || {};
+  const appActive = !!(app.baseURL || app.authToken || app.model);
 
   const baseURL =
-    process.env.ANTHROPIC_BASE_URL || env.ANTHROPIC_BASE_URL || "https://api.anthropic.com";
+    process.env.ANTHROPIC_BASE_URL ||
+    app.baseURL ||
+    env.ANTHROPIC_BASE_URL ||
+    "https://api.anthropic.com";
   const authToken =
     process.env.ANTHROPIC_AUTH_TOKEN ||
     process.env.ANTHROPIC_API_KEY ||
+    app.authToken ||
     env.ANTHROPIC_AUTH_TOKEN ||
     env.ANTHROPIC_API_KEY ||
     "";
 
-  const models = {
+  const claudeModels = {
     opus: env.ANTHROPIC_DEFAULT_OPUS_MODEL || "claude-opus-4-20250514",
     sonnet: env.ANTHROPIC_DEFAULT_SONNET_MODEL || "claude-sonnet-4-20250514",
     haiku: env.ANTHROPIC_DEFAULT_HAIKU_MODEL || "claude-3-5-haiku-20241022",
   };
 
-  // settings.model 形如 "opus"/"sonnet"/"haiku"，映射到具体模型 ID
-  const tier = (settings.model || "sonnet").toLowerCase();
-  const defaultModel = models[tier] || models.sonnet;
+  // App 配置了具体模型名 → 所有档位都用它（本 App 只跑一个模型，行为一致）。
+  const claudeTier = (settings.model || "sonnet").toLowerCase();
+  const claudeDefault = claudeModels[claudeTier] || claudeModels.sonnet;
+  const usingAppModel = !!app.model;
+  const defaultModel = app.model || claudeDefault;
+  const models = usingAppModel
+    ? { opus: app.model, sonnet: app.model, haiku: app.model }
+    : claudeModels;
+
+  const source = appActive
+    ? APP_MODEL_PATH
+    : fs.existsSync(SETTINGS_PATH)
+    ? SETTINGS_PATH
+    : "(defaults)";
 
   return {
     baseURL: baseURL.replace(/\/+$/, ""),
     authToken,
     models,
-    tier,
+    tier: usingAppModel ? "app" : claudeTier,
     defaultModel,
-    source: fs.existsSync(SETTINGS_PATH) ? SETTINGS_PATH : "(defaults)",
+    source,
+    usingApp: appActive,
+  };
+}
+
+// 用一份临时的显式配置构建 cfg（供"保存前测试"用，不落盘、不读文件）。
+export function configFromOverride({ baseURL, authToken, model } = {}) {
+  const m = String(model || "").trim();
+  return {
+    baseURL: String(baseURL || "").trim().replace(/\/+$/, "") || "https://api.anthropic.com",
+    authToken: String(authToken || "").trim(),
+    models: { opus: m, sonnet: m, haiku: m },
+    tier: "app",
+    defaultModel: m,
+    source: "(test)",
+    usingApp: true,
   };
 }
 

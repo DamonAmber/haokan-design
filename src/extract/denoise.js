@@ -11,6 +11,7 @@ import {
   contrastRatio,
   luminance,
 } from "../util/color.js";
+import { classifyLayout } from "./layout.js";
 
 // 合并多页的频次表
 function mergeMaps(pages, key) {
@@ -432,6 +433,7 @@ export function denoise(pages) {
   const radius = buildRadius(okPages);
   const shadows = buildShadows(okPages);
   const motion = buildMotion(okPages);
+  const layout = classifyLayout(okPages);
   const cssVars = collectCssVars(okPages);
 
   // 密度：大间距(≥32)占比越高越"通透"
@@ -447,6 +449,7 @@ export function denoise(pages) {
     radius,
     shadows,
     motion,
+    layout,
     density,
     siteTokens: {
       count: Object.keys(cssVars).length,

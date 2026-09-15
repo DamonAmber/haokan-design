@@ -125,13 +125,18 @@ node src/lint.js tailwindcss-com-2026... ./my-app/src
 
 ## 应用到你的 AI 项目
 
-**最简单**：在画廊里打开任意资产，点右上角「**应用到项目**」，弹窗提供两种方式：
-- **复制粘贴**：一键复制 AI 规则 / CSS 变量 / Tailwind 配置 / Tokens JSON；
-- **一键写入项目目录**：填写（或原生选择）项目路径，写入 `.cursorrules`、`CLAUDE.md`、`AGENTS.md`、`.kiro/steering/`，或把 `tokens.json`/`css-variables.css`/`tailwind.config.js` 写入项目的 `haokan-design/` 目录。**写入前会弹出预览**（显示目标文件、将执行的操作、以及将插入的标记块全文），确认后才落盘。
+在画廊里打开任意资产，点右上角「**应用到项目**」，进入**三步引导式流程**——不用记文件名、不用手改配置：
 
-安全保证：完整规范放独立目录 `haokan-design/`，主文档只插入带 `HAOKAN:START/END` 标记的简短引用块——**重复写入只替换该块、不堆积**；首次修改前自动备份为 `.haokan.bak`；Kiro 走独立 steering 文件不碰其它文档。
+1. **选工具**：你在用哪个 AI 编码工具？点选即可——Claude Code、Codex、Cursor、Kiro、GitHub Copilot、Windsurf，或「其他 / 不确定」。工具决定了规范写进哪个规则文件（如 Claude Code → `CLAUDE.md`、Cursor → `.cursorrules`、Copilot → `.github/copilot-instructions.md`、Kiro → 独立 `.kiro/steering/`），你只管选工具。
+2. **选项目**：填写（或原生选择）项目根目录。
+3. **预览确认**：先跑**安全检查**再展示写入预览（目标文件、将执行的操作、将插入的标记块全文），**确认后才落盘**。
 
-也可手动：把 `rules/ai-rules.md` 放进对应规则文件，或用 `tokens.json` / `css-variables.css` / `tailwind.config.js` 直接接入构建。让编码工具生成 UI 时遵守该设计语言，从源头消除“AI 味”。
+**防止改坏项目的安全措施**：
+- **写入前必预览**：明确列出每个目标文件与将执行的操作（新建 / 追加标记块 / 替换标记块），确认才写。
+- **安全检查**：自动体检目标目录——检测到 **Git** 会提示「写入后可 `git checkout .` 一键回退」；**没有项目标志**（缺 `package.json`/`.git` 等）或**误指到用户主目录 / 磁盘根**时给出醒目警告，并要求**勾选确认**才允许写入。
+- **不堆积、可回退**：完整规范放独立目录 `haokan-design/`，主文档只插入带 `HAOKAN:START/END` 标记的简短引用块——**重复写入只替换该块、不堆积**；首次修改前自动备份为 `.haokan.bak`；Kiro 走独立 steering 文件、不碰其它文档；所有写入都限制在所选项目目录内。
+
+也可在弹窗里点「更愿意自己粘贴？」走**手动方式**：复制 `ai-rules.md` / `css-variables.css` / `tailwind.config.js` / `tokens.json`，自己粘贴进对应规则文件或接入构建。让编码工具生成 UI 时遵守该设计语言，从源头消除“AI 味”。
 
 ## 测试
 

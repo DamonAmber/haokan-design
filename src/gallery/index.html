@@ -100,24 +100,57 @@
   .seltoolbar .tbtn.danger:hover{background:var(--red);border-color:var(--red);color:#fff}
 
   /* 详情浮层 */
-  .overlay{position:fixed;inset:0;z-index:50;background:rgba(0,0,0,.5);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);display:none;align-items:center;justify-content:center;padding:24px}
-  .overlay.show{display:flex}
-  .viewer{width:min(1120px,94vw);height:92vh;background:var(--glass-2);backdrop-filter:var(--blur);-webkit-backdrop-filter:var(--blur);border:1px solid var(--line);border-radius:var(--radius-lg);overflow:hidden;display:flex;flex-direction:column;box-shadow:var(--shadow-lg),var(--hair)}
+  .overlay{position:fixed;inset:0;z-index:50;background:rgba(6,7,10,0);backdrop-filter:blur(0px) saturate(150%);-webkit-backdrop-filter:blur(0px) saturate(150%);display:flex;align-items:center;justify-content:center;padding:24px;visibility:hidden;pointer-events:none;transition:background .34s ease,backdrop-filter .34s ease,-webkit-backdrop-filter .34s ease,visibility .34s}
+  .overlay.show{background:rgba(6,7,10,.55);backdrop-filter:blur(12px) saturate(160%);-webkit-backdrop-filter:blur(12px) saturate(160%);visibility:visible;pointer-events:auto}
+  /* 关闭时更干脆的收束 */
+  .overlay.closing{transition:background .26s ease,backdrop-filter .26s ease,-webkit-backdrop-filter .26s ease,visibility .26s}
+  .viewer{width:min(1120px,94vw);height:92vh;background:var(--glass-2);backdrop-filter:var(--blur);-webkit-backdrop-filter:var(--blur);border:1px solid var(--line);border-radius:var(--radius-lg);overflow:hidden;display:flex;flex-direction:column;box-shadow:var(--shadow-lg),var(--hair);
+    transform:translateY(28px) scale(.955);opacity:0;transform-origin:center 62%;will-change:transform,opacity;
+    transition:transform .48s cubic-bezier(.16,1,.3,1),opacity .34s ease,width .34s cubic-bezier(.2,.85,.25,1),height .34s cubic-bezier(.2,.85,.25,1)}
+  .overlay.show .viewer{transform:none;opacity:1}
+  .overlay.closing .viewer{transition:transform .26s cubic-bezier(.45,0,.75,.25),opacity .2s ease}
+  /* 样张 / 微调：给样张接近真实版心的宽度，别挤在小画面里 */
+  .viewer.wide{width:min(1520px,97vw);height:95vh}
   .viewer-bar{display:flex;align-items:center;gap:8px;padding:12px 14px;border-bottom:1px solid var(--line);-webkit-app-region:no-drag}
   .viewer-bar .vt{font-weight:650;flex:1;min-width:0;color:var(--fg);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;margin-right:8px}
-  .viewer iframe{flex:1;width:100%;border:0;background:#fff}
-  .icon-btn{height:34px;display:inline-flex;align-items:center;border:1px solid var(--line);background:var(--fill);border-radius:10px;padding:0 13px;font-size:13px;font-weight:500;cursor:pointer;color:var(--fg);flex:none;white-space:nowrap;line-height:1;transition:.15s;-webkit-app-region:no-drag}
+  /* color-scheme:dark 让空白/加载中的 iframe 画布呈深色而非纯白，杜绝弹出/关闭时的白闪；
+     样张与规范页都会自设不透明背景，故不受影响 */
+  .viewer iframe{flex:1;width:100%;border:0;background:var(--panel);color-scheme:dark}
+  .icon-btn{height:34px;display:inline-flex;align-items:center;justify-content:center;gap:6px;border:1px solid var(--line);background:var(--fill);border-radius:10px;padding:0 13px;font-size:13px;font-weight:500;cursor:pointer;color:var(--fg);flex:none;white-space:nowrap;line-height:1;text-decoration:none;transition:.15s;-webkit-app-region:no-drag}
   .icon-btn:hover{background:var(--fill-2)}
   .icon-btn.accent{background:var(--accent);color:#fff;border-color:transparent;box-shadow:0 2px 12px rgba(10,132,255,.42)}
   .icon-btn.accent:hover{background:var(--accent-press)}
+  .icon-btn.is-disabled{opacity:.4;pointer-events:none}
+  .icon-btn svg{width:16px;height:16px;display:block;flex:none}
+  /* 右侧图标工具（下载 / 关闭）：34×34 方形图标按钮，用细分隔线与文字操作分组 */
+  .viewer-bar .sep{width:1px;height:20px;background:var(--line);flex:none;margin:0 3px}
+  .icon-btn.only{width:34px;padding:0}
+  .icon-btn.only.close{color:var(--muted)}
+  .icon-btn.only.close:hover{background:var(--fill-2);color:var(--fg)}
 
   /* 通用弹窗 */
-  .modal{position:fixed;inset:0;z-index:60;background:rgba(0,0,0,.5);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);display:none;align-items:center;justify-content:center;padding:24px}
-  .modal.show{display:flex}
-  .dialog{width:min(560px,94vw);max-height:90vh;overflow:auto;background:var(--glass-2);backdrop-filter:var(--blur);-webkit-backdrop-filter:var(--blur);border:1px solid var(--line);border-radius:var(--radius-lg);padding:24px;color:var(--fg);box-shadow:var(--shadow-lg),var(--hair)}
+  .modal{position:fixed;inset:0;z-index:60;display:flex;align-items:center;justify-content:center;padding:24px;background:rgba(6,7,10,.52);backdrop-filter:blur(10px) saturate(160%);-webkit-backdrop-filter:blur(10px) saturate(160%);opacity:0;visibility:hidden;pointer-events:none;transition:opacity .2s ease,visibility .2s}
+  .modal.show{opacity:1;visibility:visible;pointer-events:auto}
+  .dialog{display:flex;flex-direction:column;width:min(520px,94vw);max-height:min(86vh,880px);overflow:hidden;background:var(--glass-2);backdrop-filter:var(--blur);-webkit-backdrop-filter:var(--blur);border:1px solid var(--line);border-radius:var(--radius-lg);color:var(--fg);box-shadow:var(--shadow-lg),var(--hair);transform:translateY(12px) scale(.985);opacity:.5;transition:transform .28s cubic-bezier(.2,.85,.25,1),opacity .2s ease}
+  .modal.show .dialog{transform:none;opacity:1}
   .dialog.wide{width:min(1180px,96vw)}
-  .dialog h3{margin:0 0 6px;font-size:19px;font-weight:680;letter-spacing:-.01em}
-  .dialog p{margin:0 0 18px;color:var(--muted);font-size:13.5px;line-height:1.55}
+  .dialog.md{width:min(600px,94vw)}
+  /* 头 / 体 / 脚 三段：头脚固定、内容体滚动 */
+  .dlg-head{display:flex;align-items:flex-start;gap:14px;padding:20px 22px 12px;flex:none}
+  .dlg-head .dh-t{flex:1;min-width:0}
+  .dlg-head h3{margin:0;font-size:18px;font-weight:680;letter-spacing:-.01em;color:var(--fg)}
+  .dlg-sub{margin:7px 0 0;color:var(--muted);font-size:13px;line-height:1.6}
+  .dlg-sub b{color:var(--fg);font-weight:600}
+  .dlg-x{flex:none;width:32px;height:32px;border-radius:9px;border:1px solid transparent;background:var(--fill);color:var(--muted);display:flex;align-items:center;justify-content:center;cursor:pointer;transition:.15s;-webkit-app-region:no-drag}
+  .dlg-x:hover{background:var(--fill-2);color:var(--fg)}
+  .dlg-x:active{transform:scale(.94)}
+  .dlg-x svg{width:16px;height:16px;display:block}
+  .dlg-body{padding:8px 22px 6px;overflow:auto;flex:1;min-height:0}
+  .dlg-body>*:first-child{margin-top:0}
+  .dlg-foot{display:flex;align-items:center;gap:10px;justify-content:flex-end;padding:15px 22px 18px;flex:none;border-top:1px solid var(--line)}
+  .dlg-foot .spread{margin-right:auto}
+  .dialog h3{margin:0 0 6px;font-size:18px;font-weight:680;letter-spacing:-.01em}
+  .dialog p{margin:0 0 16px;color:var(--muted);font-size:13.5px;line-height:1.6}
   .field{display:flex;flex-direction:column;gap:7px;margin-bottom:15px}
   .field label{font-size:13px;color:var(--muted)}
   .field .inline{display:flex;gap:8px}
@@ -169,13 +202,73 @@
   .tray-steps .stepdot{width:15px;height:15px}
   .tray-steps .steptxt b{font-size:12.5px}
 
-  /* 应用到项目 */
-  .apply-sec{margin:18px 0;padding-top:18px;border-top:1px solid var(--line)}
-  .apply-sec.first{border-top:0;padding-top:0}
+  /* 应用到项目 · 引导式向导 */
   .apply-h{font-weight:650;font-size:14px;margin-bottom:10px;color:var(--fg)}
-  .apply-h .sub{font-weight:400;color:var(--muted);font-size:12px;margin-left:6px}
   .copy-row{display:flex;flex-wrap:wrap;gap:8px}
   .copy-row .btn{font-size:13px;height:34px}
+
+  /* 步骤条 */
+  .wiz-steps{display:flex;align-items:center;gap:9px;margin:2px 0 20px}
+  .wiz-step{display:flex;align-items:center;gap:7px;font-size:12.5px;color:var(--fg3);font-weight:500;white-space:nowrap}
+  .wiz-step i{width:21px;height:21px;border-radius:50%;border:1.5px solid var(--line);display:flex;align-items:center;justify-content:center;font-size:11px;font-style:normal;flex:none;transition:.18s}
+  .wiz-step.active{color:var(--fg)}
+  .wiz-step.active i{border-color:var(--accent);background:var(--accent);color:#fff}
+  .wiz-step.done{color:var(--muted)}
+  .wiz-step.done i{border-color:var(--green);background:var(--green);color:#06220f;font-weight:800}
+  .wiz-sep{flex:1;height:1.5px;background:var(--line);max-width:40px;border-radius:2px}
+
+  /* 工具选择卡片 */
+  .tool-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin:8px 0 6px}
+  .tool-card{display:flex;flex-direction:column;gap:4px;text-align:left;padding:13px 15px;border:1px solid var(--line);background:var(--fill);border-radius:14px;cursor:pointer;transition:.15s;color:var(--fg);font:inherit}
+  .tool-card:hover{background:var(--fill-2);border-color:var(--line-strong);transform:translateY(-1px)}
+  .tool-card:focus-visible{outline:none;box-shadow:0 0 0 4px var(--ring)}
+  .tool-card .tc-name{font-weight:650;font-size:14px}
+  .tool-card .tc-file{font-size:11.5px;color:var(--muted);font-family:ui-monospace,SFMono-Regular,Menlo,monospace;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .tool-card.span2{grid-column:1 / -1;flex-direction:row;align-items:center;justify-content:space-between}
+
+  /* 已选工具条 */
+  .tool-chosen{display:flex;align-items:center;gap:10px;padding:11px 14px;border:1px solid var(--line);border-radius:12px;background:var(--fill);margin-bottom:16px;font-size:13.5px}
+  .tool-chosen .tc-name{font-weight:650;color:var(--fg)}
+  .tool-chosen .tc-file{color:var(--muted);font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12px}
+  .tool-chosen .chg{margin-left:auto;font-size:12.5px;color:var(--accent);cursor:pointer;background:none;border:0;padding:4px 8px;border-radius:8px}
+  .tool-chosen .chg:hover{background:var(--fill-2)}
+
+  /* 安全检查框 */
+  .guard-box{display:flex;flex-direction:column;gap:8px;margin:2px 0 4px}
+  .guard-box:empty{display:none}
+  .guard-box>div{font-size:12.5px;line-height:1.5;padding:9px 12px;border-radius:10px;border:1px solid var(--line);display:flex;gap:8px;align-items:flex-start}
+  .guard-box .g-ok{color:var(--green);background:rgba(48,209,88,.1);border-color:rgba(48,209,88,.32)}
+  .guard-box .g-warn{color:var(--amber);background:rgba(255,159,10,.1);border-color:rgba(255,159,10,.32)}
+  .guard-box .g-danger{color:#ff6b61;background:rgba(255,69,58,.12);border-color:rgba(255,69,58,.42)}
+  .guard-box code{background:rgba(0,0,0,.28);padding:1px 6px;border-radius:5px;color:inherit}
+
+  /* 行内布局 & 幽灵按钮 */
+  .row.between{justify-content:space-between}
+  .btn.ghost{background:transparent;border-color:transparent;color:var(--muted)}
+  .btn.ghost:hover{background:var(--fill);color:var(--fg)}
+
+  /* 内置文件夹浏览器 */
+  .fs-browser{border:1px solid var(--line);border-radius:12px;background:var(--fill);margin-top:10px;overflow:hidden}
+  .fs-bar{display:flex;align-items:center;gap:9px;padding:9px 11px;border-bottom:1px solid var(--line)}
+  .fs-up{font-size:12.5px;padding:5px 11px;border:1px solid var(--line);background:var(--fill);border-radius:8px;cursor:pointer;color:var(--fg);flex:none;transition:.15s}
+  .fs-up:hover{background:var(--fill-2)}
+  .fs-up:disabled{opacity:.38;cursor:default}
+  .fs-cur{flex:1;min-width:0;font-size:12px;color:var(--muted);font-family:ui-monospace,SFMono-Regular,Menlo,monospace;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .fs-list{max-height:220px;overflow:auto;padding:6px}
+  .fs-item{display:flex;align-items:center;gap:9px;padding:8px 10px;border-radius:9px;cursor:pointer;font-size:13px;color:var(--fg)}
+  .fs-item:hover{background:var(--fill-2)}
+  .fs-item .fi-ico{flex:none;opacity:.8}
+  .fs-item .fi-name{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .fs-item .fi-badge{font-size:10.5px;color:var(--green);border:1px solid rgba(48,209,88,.4);background:rgba(48,209,88,.12);border-radius:var(--pill);padding:1px 8px;flex:none}
+  .fs-empty{padding:16px;text-align:center;color:var(--fg3);font-size:12.5px}
+  .fs-foot{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:9px 11px;border-top:1px solid var(--line)}
+  .fs-foot .hint{margin:0;flex:1;min-width:0}
+
+  /* 完成页 */
+  .done-check{width:56px;height:56px;border-radius:50%;background:rgba(48,209,88,.14);border:1px solid rgba(48,209,88,.4);color:var(--green);display:flex;align-items:center;justify-content:center;font-size:28px;font-weight:800;margin:8px auto 14px}
+  .done-title{text-align:center;margin:0 0 8px;font-size:17px;font-weight:680;color:var(--fg)}
+  .done-next{background:var(--fill);border:1px solid var(--line);border-radius:12px;padding:13px 15px;font-size:12.5px;color:var(--muted);line-height:1.65;margin-top:14px}
+  .done-next b{color:var(--fg)}
 
   /* lint 结果 */
   .lint-head{display:flex;align-items:center;gap:20px;margin:14px 0}
@@ -224,6 +317,102 @@
   .vbadge.no{color:var(--red);border-color:rgba(255,69,58,.42);background:rgba(255,69,58,.12)}
   .vbadge.unk{color:var(--amber);border-color:rgba(255,159,10,.42);background:rgba(255,159,10,.12)}
   .model-reply{font-size:12px;color:var(--muted);background:var(--fill);border:1px solid var(--line);border-radius:10px;padding:10px 12px;margin-top:6px;line-height:1.6;white-space:pre-wrap;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;max-height:130px;overflow:auto}
+
+  /* 按资产的提炼模型徽章（这份资产是被哪个模型、是否视觉提炼的） */
+  .asset-model{display:none;align-items:center;gap:7px;flex:none;font-size:12px;color:var(--muted);background:var(--fill);border:1px solid var(--line);border-radius:var(--pill);padding:4px 11px;-webkit-app-region:no-drag;white-space:nowrap;max-width:340px;overflow:hidden;text-overflow:ellipsis}
+  .asset-model.show{display:inline-flex}
+  .asset-model .mdot{width:7px;height:7px;box-shadow:none}
+  .asset-model b{color:var(--fg);font-weight:600}
+  .asset-model .dim{opacity:.7}
+
+  /* 样张类别切换条（仅样张模式下显示） */
+  .demo-bar{display:none;align-items:center;gap:12px;padding:9px 14px;border-bottom:1px solid var(--line);background:var(--fill);-webkit-app-region:no-drag}
+  .demo-bar.show{display:flex}
+  .demo-bar .db-lead{font-size:12px;font-weight:650;color:var(--fg);flex:none}
+  .demo-bar .db-note{font-size:11.5px;color:var(--muted);margin-left:auto;flex:none}
+  @media(max-width:720px){.demo-bar .db-note{display:none}}
+
+  /* 分段控件（规范 / 样张 / 微调；对比页 token / 样张） */
+  .seg{display:inline-flex;background:var(--fill);border:1px solid var(--line);border-radius:10px;padding:3px;gap:2px;flex:none;-webkit-app-region:no-drag}
+  .seg button{border:0;background:transparent;color:var(--muted);font:inherit;font-size:13px;font-weight:600;padding:5px 13px;border-radius:8px;cursor:pointer;white-space:nowrap;transition:.15s}
+  .seg button:hover{color:var(--fg)}
+  .seg button.on{background:rgba(255,255,255,.92);color:#0b0b0f}
+
+  /* 编辑器：左控制面板 + 右实时样张 */
+  .editor-wrap{flex:1;display:none;min-height:0}
+  .editor-wrap.show{display:flex}
+  .editor-controls{width:326px;flex:none;overflow-y:auto;overflow-x:hidden;padding:20px 18px 34px;border-right:1px solid var(--line);background:linear-gradient(180deg,rgba(255,255,255,.03),transparent 260px)}
+  .editor-wrap iframe{flex:1;width:100%;border:0;background:#fff}
+  .ed-sec{margin-bottom:20px;padding-bottom:20px;border-bottom:1px solid var(--line)}
+  .ed-sec:last-child{border-bottom:0;padding-bottom:0;margin-bottom:0}
+  .ed-title{font-size:11px;font-weight:700;letter-spacing:.09em;text-transform:uppercase;color:var(--muted);margin:0 0 15px}
+  /* 统一两列网格：固定标签列 + 控件列，所有行对齐 */
+  .ed-row{display:grid;grid-template-columns:50px 1fr;align-items:center;gap:12px;margin-bottom:12px}
+  .ed-row>label{font-size:13px;color:var(--fg);opacity:.86;white-space:nowrap}
+  .ed-ctl{display:flex;align-items:center;gap:9px;min-width:0}
+  .ed-color{width:30px;height:30px;border-radius:8px;border:1px solid var(--line-strong);background:none;padding:0;cursor:pointer;flex:none;overflow:hidden}
+  .ed-color::-webkit-color-swatch-wrapper{padding:0}
+  .ed-color::-webkit-color-swatch{border:none;border-radius:7px}
+  .ed-hex{flex:1;min-width:0;height:30px;padding:0 10px;border:1px solid var(--line);border-radius:8px;background:var(--fill);color:var(--fg);font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12.5px}
+  .ed-hex:focus{outline:none;box-shadow:0 0 0 3px var(--ring);border-color:transparent;background:var(--fill-2)}
+  .ed-select{width:100%;height:32px;padding:0 10px;border:1px solid var(--line);border-radius:9px;background:var(--fill);color:var(--fg);font:inherit;font-size:13px;cursor:pointer;transition:.12s}
+  .ed-select:hover{background:var(--fill-2)}
+  .ed-select:focus{outline:none;box-shadow:0 0 0 3px var(--ring);border-color:transparent}
+  .ed-range{flex:1;min-width:0;accent-color:var(--accent);cursor:pointer}
+  .ed-val{font-size:12px;color:var(--muted);font-family:ui-monospace,SFMono-Regular,Menlo,monospace;min-width:36px;text-align:right;flex:none}
+  .ed-seg{display:grid;grid-template-columns:repeat(3,1fr);gap:3px;background:var(--fill);border:1px solid var(--line);border-radius:9px;padding:3px}
+  .ed-seg button{border:0;background:transparent;color:var(--muted);font:inherit;font-size:12.5px;font-weight:600;padding:6px 0;border-radius:6px;cursor:pointer;transition:.12s}
+  .ed-seg button:hover{color:var(--fg)}
+  .ed-seg button.on{background:var(--accent);color:#fff}
+  .ed-check{display:flex;align-items:center;gap:9px;font-size:12.5px;color:var(--muted);margin:0 0 4px;cursor:pointer;user-select:none}
+  .ed-check input{width:15px;height:15px;accent-color:var(--accent);flex:none;cursor:pointer}
+  .ed-note{font-size:11.5px;color:var(--fg3);line-height:1.6;margin:0 0 14px}
+  .ed-contrast{display:flex;flex-direction:column;gap:8px}
+  .ed-cbadge{display:flex;align-items:center;gap:8px;font-size:12px;padding:9px 11px;border-radius:10px;border:1px solid var(--line);background:var(--fill)}
+  .ed-cbadge .nm{color:var(--fg);font-weight:500}
+  .ed-cbadge .tip{margin-left:auto;font-size:11px;opacity:.9}
+  .ed-cbadge .ck{font-weight:700;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-variant-numeric:tabular-nums}
+  .ed-cbadge.ok{color:var(--green);border-color:rgba(48,209,88,.3);background:rgba(48,209,88,.09)}
+  .ed-cbadge.warn{color:var(--amber);border-color:rgba(255,159,10,.3);background:rgba(255,159,10,.09)}
+  .ed-cbadge.bad{color:#ff6b61;border-color:rgba(255,69,58,.38);background:rgba(255,69,58,.11)}
+  .ed-actions{display:flex;flex-direction:column;gap:9px;margin-top:2px}
+  .ed-actions .btn{width:100%;justify-content:center}
+  .ed-label{width:100%;height:34px;padding:0 11px;border:1px solid var(--line);border-radius:9px;background:var(--fill);color:var(--fg);font-size:13px;margin-bottom:11px}
+  .ed-label::placeholder{color:var(--fg3)}
+  .ed-label:focus{outline:none;box-shadow:0 0 0 3px var(--ring);border-color:transparent;background:var(--fill-2)}
+
+  /* 模型能力对比（无视觉 vs 有视觉） */
+  .cap-head{font-size:12.5px;font-weight:650;color:var(--fg);margin:16px 0 8px}
+  .cap-cmp{width:100%;border-collapse:collapse;font-size:12.5px;overflow:hidden;border-radius:10px;border:1px solid var(--line)}
+  .cap-cmp th,.cap-cmp td{padding:8px 10px;border-bottom:1px solid var(--line);text-align:left;vertical-align:middle}
+  .cap-cmp tr:last-child th,.cap-cmp tr:last-child td{border-bottom:0}
+  .cap-cmp thead th{color:var(--muted);font-weight:600;font-size:11.5px;background:var(--fill)}
+  .cap-cmp td.c,.cap-cmp th.c{text-align:center;width:92px}
+  .cap-cmp .yes{color:var(--green);font-weight:700}
+  .cap-cmp .no{color:var(--fg3)}
+  .cap-cmp .active{background:rgba(10,132,255,.12)}
+  .cap-cmp th.active,.cap-cmp td.active.c{position:relative}
+  .cap-badge{display:inline-block;font-size:10px;font-weight:700;color:#fff;background:var(--accent);border-radius:var(--pill);padding:1px 7px;margin-left:6px;vertical-align:middle}
+  .cap-note{font-size:11.5px;color:var(--muted);margin-top:10px;line-height:1.6}
+  .cap-note b{color:var(--fg)}
+
+  /* 模型设置表单 */
+  .cfg-field{display:flex;flex-direction:column;gap:7px;margin-bottom:14px}
+  .cfg-field label{font-size:13px;color:var(--muted)}
+  .cfg-field input{height:var(--btn-h);padding:0 13px;border:1px solid var(--line);border-radius:10px;background:var(--fill);color:var(--fg);font-size:14px}
+  .cfg-field input:focus{outline:none;background:var(--fill-2);border-color:transparent;box-shadow:0 0 0 4px var(--ring)}
+  .cfg-result{font-size:12.5px;line-height:1.6;margin-top:6px;border-radius:10px;padding:10px 12px;border:1px solid var(--line);background:var(--fill);display:none}
+  .cfg-result.show{display:block}
+  .cfg-result.ok{border-color:rgba(48,209,88,.3);background:rgba(48,209,88,.09)}
+  .cfg-result.bad{border-color:rgba(255,69,58,.36);background:rgba(255,69,58,.1)}
+  .cfg-result .vb{font-weight:700}
+
+  /* 对比页样张并排 */
+  .cmp-demos{display:flex;gap:14px;overflow:auto;padding-bottom:6px}
+  .cmp-demo{flex:none;width:380px;border:1px solid var(--line);border-radius:14px;overflow:hidden;background:var(--panel)}
+  .cmp-demo .cd-h{padding:9px 12px;font-size:13px;font-weight:650;color:var(--fg);border-bottom:1px solid var(--line);display:flex;align-items:center;gap:8px}
+  .cmp-demo .cd-h .cdot{width:11px;height:11px;border-radius:4px;flex:none;border:1px solid rgba(255,255,255,.14)}
+  .cmp-demo iframe{width:100%;height:560px;border:0;background:#fff;display:block}
 </style>
 </head>
 <body>
@@ -257,25 +446,55 @@
     <div class="viewer">
       <div class="viewer-bar">
         <span class="vt" id="viewerTitle"></span>
-        <button class="icon-btn" id="reextractBtn" title="用当前最新版本重新提炼该网站，生成一个新资产（不会覆盖或删除原资产）">↻ 重新提炼</button>
+        <span class="asset-model" id="assetModel" title=""></span>
+        <div class="seg" id="viewSeg">
+          <button data-mode="spec" class="on" title="设计语言规范（色板/字阶/间距/动效）">规范</button>
+          <button data-mode="demo" title="用这套资产生成的中立样张">样张</button>
+          <button data-mode="edit" title="微调 token 或分层混合，实时看样张，存为新资产">微调</button>
+        </div>
+        <button class="icon-btn" id="reextractBtn" title="用当前最新版本重新提炼该网站，生成一个新资产（不会覆盖或删除原资产）">重新提炼</button>
         <button class="icon-btn accent" id="applyBtn">应用到项目</button>
         <button class="icon-btn" id="lintBtn">校验项目</button>
         <button class="icon-btn" id="revealBtn">打开文件夹</button>
-        <a class="icon-btn" id="downloadBtn" href="#">下载</a>
-        <button class="icon-btn" id="closeViewer">关闭 ✕</button>
+        <span class="sep"></span>
+        <a class="icon-btn only" id="downloadBtn" href="#" download title="下载 .stylepack" aria-label="下载">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        </a>
+        <button class="icon-btn only close" id="closeViewer" title="关闭" aria-label="关闭">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+      </div>
+      <div class="demo-bar" id="demoBar">
+        <span class="db-lead">样张类别</span>
+        <div class="seg" id="variantSeg">
+          <button data-variant="landing" class="on">落地页</button>
+          <button data-variant="dashboard">控制台</button>
+          <button data-variant="article">文章</button>
+          <button data-variant="shop">商店</button>
+          <button data-variant="portfolio">作品集</button>
+        </div>
+        <span class="db-note">同一套设计资产 · 不同页面类别</span>
       </div>
       <iframe id="viewerFrame" title="preview"></iframe>
+      <div class="editor-wrap" id="editorWrap">
+        <div class="editor-controls" id="editorControls"></div>
+        <iframe id="editorFrame" title="样张（实时）"></iframe>
+      </div>
     </div>
   </div>
 
   <!-- 新增 URL 弹窗（多 URL 后台并发） -->
   <div class="modal" id="addModal">
     <div class="dialog">
-      <h3>从 URL 提炼</h3>
-      <p>每行一个网址，可同时提炼多个（最多并发 3，其余自动排队）。提炼在后台进行，进度见右下角托盘。</p>
-      <div class="field"><label>网址（每行一个）</label><textarea id="urlInput" rows="4" placeholder="https://linear.app&#10;https://stripe.com"></textarea></div>
-      <div class="field"><label>每个站点采样页数</label><input id="pagesInput" type="number" min="1" max="12" value="5" /></div>
-      <div class="row"><button class="btn" id="addCancel">取消</button><button class="btn primary" id="addStart">开始提炼</button></div>
+      <div class="dlg-head">
+        <div class="dh-t"><h3>从 URL 提炼</h3><p class="dlg-sub">每行一个网址，可同时提炼多个（最多并发 3，其余自动排队）。后台进行，进度见右下角托盘。</p></div>
+        <button class="dlg-x" id="addCancel" aria-label="关闭"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+      </div>
+      <div class="dlg-body">
+        <div class="field"><label>网址（每行一个）</label><textarea id="urlInput" rows="4" placeholder="https://linear.app&#10;https://stripe.com"></textarea></div>
+        <div class="field"><label>每个站点采样页数</label><input id="pagesInput" type="number" min="1" max="12" value="5" /></div>
+      </div>
+      <div class="dlg-foot"><button class="btn primary" id="addStart">开始提炼</button></div>
     </div>
   </div>
 
@@ -285,84 +504,189 @@
   <!-- 导入弹窗 -->
   <div class="modal" id="importModal">
     <div class="dialog">
-      <h3>导入 .stylepack</h3>
-      <p>选择或粘贴本地 .stylepack 路径，导入到资产库。</p>
-      <div class="field"><label>文件路径</label><div class="inline"><input id="importPath" type="text" placeholder="~/Downloads/xxx.stylepack" /><button class="btn" id="importBrowse" style="display:none">浏览…</button></div></div>
-      <div class="row"><button class="btn" id="importCancel">取消</button><button class="btn primary" id="importGo">导入</button></div>
-      <div class="hint" id="importHint"></div>
+      <div class="dlg-head">
+        <div class="dh-t"><h3>导入 .stylepack</h3><p class="dlg-sub">选择或粘贴本地 .stylepack 路径，导入到资产库。</p></div>
+        <button class="dlg-x" id="importCancel" aria-label="关闭"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+      </div>
+      <div class="dlg-body">
+        <div class="field"><label>文件路径</label><div class="inline"><input id="importPath" type="text" placeholder="~/Downloads/xxx.stylepack" /><button class="btn" id="importBrowse" style="display:none">浏览…</button></div></div>
+        <div class="hint" id="importHint"></div>
+      </div>
+      <div class="dlg-foot"><button class="btn primary" id="importGo">导入</button></div>
     </div>
   </div>
 
   <!-- lint 弹窗 -->
   <div class="modal" id="lintModal">
     <div class="dialog">
-      <h3>校验项目合规性</h3>
-      <p>用「<span id="lintPackName"></span>」的设计 token 检查你的项目代码是否守规矩（颜色/圆角/字体 + AI 味信号）。</p>
-      <div class="field"><label>项目路径（文件或目录）</label><div class="inline"><input id="lintPath" type="text" placeholder="~/code/my-app/src" /><button class="btn" id="lintBrowse" style="display:none">浏览…</button></div></div>
+      <div class="dlg-head">
+        <div class="dh-t"><h3>校验项目合规性</h3><p class="dlg-sub">用「<span id="lintPackName"></span>」的设计 token 检查项目代码是否守规矩（颜色 / 圆角 / 字体 + AI 味信号）。</p></div>
+        <button class="dlg-x" id="lintCancel" aria-label="关闭"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+      </div>
+      <div class="dlg-body">
+      <div class="field"><label>项目路径（文件或目录）</label><div class="inline"><input id="lintPath" type="text" placeholder="~/code/my-app/src" /><button class="btn" id="lintBrowse">浏览…</button></div></div>
+      <div class="fs-browser" id="lintFs" style="display:none">
+        <div class="fs-bar">
+          <button class="fs-up" type="button">⬆ 上一级</button>
+          <span class="fs-cur" title=""></span>
+        </div>
+        <div class="fs-list"></div>
+        <div class="fs-foot">
+          <span class="hint fs-hint">点文件夹进入，或直接选当前目录</span>
+          <button class="btn primary fs-pick" type="button">选择此目录</button>
+        </div>
+      </div>
       <div class="checkline"><input type="checkbox" id="lintSpacing"/><label for="lintSpacing">同时检查间距（更严格，可能有噪声）</label></div>
-      <div class="row"><button class="btn" id="lintCancel">关闭</button><button class="btn primary" id="lintRun">开始校验</button></div>
       <div id="lintResult"></div>
+      </div>
+      <div class="dlg-foot"><button class="btn primary" id="lintRun">开始校验</button></div>
     </div>
   </div>
 
-  <!-- 应用到项目弹窗 -->
+  <!-- 应用到项目弹窗 · 引导式向导 -->
   <div class="modal" id="applyModal">
     <div class="dialog">
-      <h3>把这套设计应用到你的项目</h3>
-      <div id="applyMain">
-        <p>让 AI 编码工具遵守这套设计语言，消除“AI 味”。两种方式任选：</p>
-        <div class="apply-sec first">
-          <div class="apply-h">① 复制粘贴<span class="sub">复制后粘贴进对应文件即可</span></div>
-          <div class="copy-row">
-            <button class="btn" data-copy="rules/ai-rules.md">复制 AI 规则</button>
-            <button class="btn" data-copy="rules/css-variables.css">复制 CSS 变量</button>
-            <button class="btn" data-copy="rules/tailwind.config.js">复制 Tailwind 配置</button>
-            <button class="btn" data-copy="tokens.json">复制 Tokens JSON</button>
-          </div>
-        </div>
-        <div class="apply-sec">
-          <div class="apply-h">② 一键写入项目目录<span class="sub">写入前先预览，确认后才落盘</span></div>
-          <div class="field"><label>项目路径</label><div class="inline"><input id="applyPath" type="text" placeholder="~/code/my-app" /><button class="btn" id="applyBrowse" style="display:none">浏览…</button></div></div>
-          <div class="copy-row">
-            <button class="btn" data-write="cursor">写入 .cursorrules</button>
-            <button class="btn" data-write="claude">写入 CLAUDE.md</button>
-            <button class="btn" data-write="agents">写入 AGENTS.md</button>
-            <button class="btn" data-write="kiro">写入 .kiro/steering</button>
-            <button class="btn" data-write="tokens">写入设计 tokens 文件</button>
-          </div>
-          <div class="hint">完整规范写入独立目录 <code>haokan-design/</code>，主文档只插入带 <code>HAOKAN:START/END</code> 标记的简短引用块：<b>重复写入只替换、不堆积</b>，首次修改前自动备份 <code>.haokan.bak</code>。</div>
-          <div class="hint" id="applyHint"></div>
-        </div>
-        <div class="row"><button class="btn" id="applyClose">关闭</button></div>
+      <div class="dlg-head">
+        <div class="dh-t"><h3>应用到你的项目</h3></div>
+        <button class="dlg-x" id="applyCloseX" aria-label="关闭"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
       </div>
-      <div id="applyPreview" style="display:none">
-        <div class="apply-h">写入预览 · 确认后才落盘</div>
+      <div class="dlg-body">
+      <div class="wiz-steps" id="wizSteps">
+        <span class="wiz-step" data-s="1"><i>1</i>选工具</span>
+        <span class="wiz-sep"></span>
+        <span class="wiz-step" data-s="2"><i>2</i>选项目</span>
+        <span class="wiz-sep"></span>
+        <span class="wiz-step" data-s="3"><i>3</i>预览确认</span>
+      </div>
+
+      <!-- 步骤 1：选工具 -->
+      <div class="wiz-pane" id="wizTool">
+        <p>你在用哪个 AI 编码工具？选好后我会自动写进它读取的规则文件，你不用记文件名，也不用手改配置。</p>
+        <div class="tool-grid" id="toolGrid"></div>
+        <div class="row between" style="margin-top:16px">
+          <button class="btn ghost" id="applyManualLink">更愿意自己粘贴？</button>
+          <button class="btn" id="applyClose">关闭</button>
+        </div>
+      </div>
+
+      <!-- 步骤 2：选项目 -->
+      <div class="wiz-pane" id="wizPath" style="display:none">
+        <div class="tool-chosen" id="toolChosen"></div>
+        <div class="field"><label>你的项目根目录</label><div class="inline"><input id="applyPath" type="text" placeholder="~/code/my-app" /><button class="btn" id="applyBrowse">浏览…</button></div></div>
+        <div class="fs-browser" id="applyFs" style="display:none">
+          <div class="fs-bar">
+            <button class="fs-up" type="button">⬆ 上一级</button>
+            <span class="fs-cur" title=""></span>
+          </div>
+          <div class="fs-list"></div>
+          <div class="fs-foot">
+            <span class="hint fs-hint">点文件夹进入，或直接选当前目录</span>
+            <button class="btn primary fs-pick" type="button">选择此目录</button>
+          </div>
+        </div>
+        <div class="hint">填你要接入设计规范的项目根目录（一般是有 <code>package.json</code>/<code>.git</code> 的那层）。下一步会先做安全检查和预览，<b>确认后才真正写入</b>。</div>
+        <div class="hint" id="applyPathHint"></div>
+        <div class="row between" style="margin-top:16px">
+          <button class="btn" id="wizBack1">← 上一步</button>
+          <button class="btn primary" id="wizToPreview">下一步：预览写入 →</button>
+        </div>
+      </div>
+
+      <!-- 步骤 3：预览确认 -->
+      <div class="wiz-pane" id="wizPreview" style="display:none">
+        <div class="lbl">安全检查</div>
+        <div class="guard-box" id="guardBox"></div>
+        <label class="checkline" id="applyGate" style="display:none"><input type="checkbox" id="applyGateCk"/> 我已确认上面的路径就是我要修改的项目目录</label>
+        <div class="lbl" style="margin-top:14px">将执行的操作</div>
         <div class="hint" id="applyPreviewOps"></div>
-        <div class="lbl" style="margin:12px 0 6px">将插入/写入的内容</div>
-        <pre class="log show" id="applyPreviewBlock" style="max-height:300px;margin-top:0"></pre>
+        <div class="lbl" style="margin:14px 0 6px">将插入 / 写入的内容</div>
+        <pre class="log show" id="applyPreviewBlock" style="max-height:230px;margin-top:0"></pre>
         <div class="hint" id="applyPreviewAssets"></div>
-        <div class="row"><button class="btn" id="applyPreviewCancel">返回</button><button class="btn primary" id="applyPreviewConfirm">确认写入</button></div>
+        <div class="row between" style="margin-top:16px">
+          <button class="btn" id="wizBack2">← 返回</button>
+          <button class="btn primary" id="applyPreviewConfirm">确认写入</button>
+        </div>
       </div>
+
+      <!-- 完成 -->
+      <div class="wiz-pane" id="wizDone" style="display:none">
+        <div class="done-check">✓</div>
+        <div class="done-title">已写入项目</div>
+        <div class="hint" id="applyDoneMsg" style="text-align:center"></div>
+        <div class="done-next" id="applyDoneNext"></div>
+        <div class="row" style="margin-top:16px"><button class="btn primary" id="applyDoneClose">完成</button></div>
+      </div>
+
+      <!-- 手动复制（回退方式） -->
+      <div class="wiz-pane" id="wizManual" style="display:none">
+        <p>复制下面的内容，自己粘贴进 AI 工具的规则文件即可（不写入任何文件、最保守）。</p>
+        <div class="copy-row">
+          <button class="btn" data-copy="rules/ai-rules.md">复制 AI 规则</button>
+          <button class="btn" data-copy="rules/css-variables.css">复制 CSS 变量</button>
+          <button class="btn" data-copy="rules/tailwind.config.js">复制 Tailwind 配置</button>
+          <button class="btn" data-copy="tokens.json">复制 Tokens JSON</button>
+        </div>
+        <div class="hint" id="applyCopyHint"></div>
+        <div class="row between" style="margin-top:16px">
+          <button class="btn" id="wizManualBack">← 返回引导</button>
+          <button class="btn" id="applyManualClose">关闭</button>
+        </div>
+      </div>
+      </div><!-- /dlg-body -->
     </div>
   </div>
 
   <!-- 对比弹窗 -->
   <div class="modal" id="cmpModal">
     <div class="dialog wide">
-      <h3>设计资产对比</h3>
-      <p>并排比较所选资产的 token 系统。</p>
-      <div class="cmp-scroll"><div class="cmp" id="cmpBody"></div></div>
-      <div class="row"><button class="btn" id="cmpClose">关闭</button></div>
+      <div class="dlg-head">
+        <div class="dh-t"><h3>设计资产对比</h3><p class="dlg-sub" id="cmpDesc">并排比较所选资产的 token 系统。</p></div>
+        <div class="seg" id="cmpSeg" style="margin-right:4px">
+          <button data-mode="token" class="on">Token 对照</button>
+          <button data-mode="demo">样张对照</button>
+        </div>
+        <button class="dlg-x" id="cmpClose" aria-label="关闭"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+      </div>
+      <div class="dlg-body">
+        <div class="cmp-scroll" id="cmpTokenView"><div class="cmp" id="cmpBody"></div></div>
+        <div class="cmp-demos" id="cmpDemos" style="display:none"></div>
+      </div>
     </div>
   </div>
 
   <!-- 模型信息弹窗 -->
   <div class="modal" id="modelModal">
+    <div class="dialog md">
+      <div class="dlg-head">
+        <div class="dh-t"><h3>模型与视觉能力</h3><p class="dlg-sub">画廊调用的模型，以及上游是否具备图像<b>视觉能力</b>——发送一张纯色图请模型识别颜色<b>真实探测</b>得出。</p></div>
+        <button class="dlg-x" id="modelClose" aria-label="关闭"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+      </div>
+      <div class="dlg-body"><div id="modelBody" class="model-body"><div class="hint">加载中…</div></div></div>
+      <div class="dlg-foot">
+        <button class="btn spread" id="modelSettings">⚙ 模型设置（本 App 专用）</button>
+        <button class="btn" id="modelRefresh">重新探测</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 模型设置弹窗（App 专用，独立于 Claude Code） -->
+  <div class="modal" id="modelCfgModal">
     <div class="dialog">
-      <h3>模型与视觉能力</h3>
-      <p>画廊调用的本地模型（读取 Claude Code 当前生效配置），以及上游是否具备图像<b>视觉能力</b>——通过发送一张纯色图并请模型识别颜色<b>真实探测</b>得出。</p>
-      <div id="modelBody" class="model-body"><div class="hint">加载中…</div></div>
-      <div class="row"><button class="btn" id="modelRefresh">重新探测</button><button class="btn primary" id="modelClose">关闭</button></div>
+      <div class="dlg-head">
+        <div class="dh-t"><h3>模型设置 · 本 App 专用</h3><p class="dlg-sub">为本 App 单独配置一个模型，<b>独立于 Claude Code</b>。填任意 Anthropic 兼容端点（官方 Anthropic、CC Switch 上游、兼容网关）。清除后回退默认。<b>想要视觉档，请配置具备视觉的模型。</b></p></div>
+        <button class="dlg-x" id="cfgClose" aria-label="关闭"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+      </div>
+      <div class="dlg-body">
+        <div class="cfg-field"><label>端点 baseURL</label><input id="cfgBase" type="text" placeholder="https://api.anthropic.com 或你的网关地址"></div>
+        <div class="cfg-field"><label>API Key</label><input id="cfgToken" type="password" placeholder="sk-…"></div>
+        <div class="cfg-field"><label>模型名</label><input id="cfgModel" type="text" placeholder="claude-… 或你的上游模型名"></div>
+        <div class="cfg-result" id="cfgResult"></div>
+      </div>
+      <div class="dlg-foot">
+        <button class="btn spread" id="cfgTest">测试连接与视觉</button>
+        <button class="btn ghost" id="cfgClear">清除</button>
+        <button class="btn primary" id="cfgSave">保存</button>
+      </div>
     </div>
   </div>
 
@@ -474,19 +798,358 @@ async function toggleFav(name){
   renderFilters(); render();
 }
 
+// —— 通用文件夹浏览器组件 ——
+// 绑定「浏览…」按钮 + 路径输入框 + 一个 .fs-browser 面板。
+// 桌面版优先走原生目录对话框；浏览器版展开内置目录导航（点进子目录 / 上一级 / 选择当前目录）。
+function setupFolderPicker({ browseBtn, input, panel, onPick }){
+  let cur = null;
+  const q = (sel)=>panel.querySelector(sel);
+  async function load(p){
+    q(".fs-hint").textContent = "读取中…";
+    try{
+      const j = await (await fetch("/api/fs/list" + (p ? ("?path=" + encodeURIComponent(p)) : ""))).json();
+      if(!j.ok){ q(".fs-hint").textContent = j.error || "无法读取该目录"; return; }
+      cur = j.path;
+      q(".fs-cur").textContent = j.path; q(".fs-cur").title = j.path;
+      const up = q(".fs-up"); up.disabled = !j.parent; up.onclick = ()=>{ if(j.parent) load(j.parent); };
+      const list = q(".fs-list");
+      if(!j.entries.length){
+        list.innerHTML = `<div class="fs-empty">（此目录下没有子文件夹）</div>`;
+      } else {
+        list.innerHTML = j.entries.map(e=>
+          `<div class="fs-item" data-p="${esc(e.path)}"><span class="fi-ico">📁</span><span class="fi-name">${esc(e.name)}</span>${e.isProject?'<span class="fi-badge">项目</span>':''}</div>`
+        ).join("");
+        list.querySelectorAll("[data-p]").forEach(it=> it.onclick = ()=> load(it.dataset.p));
+      }
+      q(".fs-hint").textContent = j.isProject ? "✓ 当前目录像一个项目，可直接点右侧选择" : "点文件夹进入，或直接选当前目录";
+    }catch(e){ q(".fs-hint").textContent = "读取失败：" + e.message; }
+  }
+  browseBtn.onclick = async ()=>{
+    if(NATIVE?.pickDirectory){ const p = await NATIVE.pickDirectory(); if(p){ input.value = p; onPick && onPick(); } return; }
+    if(panel.style.display === "none"){ panel.style.display = ""; load(input.value.trim() || null); }
+    else { panel.style.display = "none"; }
+  };
+  q(".fs-pick").onclick = ()=>{ if(cur){ input.value = cur; panel.style.display = "none"; onPick && onPick(); } };
+  return { hide: ()=>{ panel.style.display = "none"; } };
+}
+
 // —— 详情 ——
 function openDetail(name){
   const p = LIBRARY.find(x=>x.name===name); if(!p) return;
   currentPack = p;
   $("#viewerTitle").textContent = p.source + "  ·  " + name;
-  $("#viewerFrame").src = p.preview;
+  renderAssetModel(p);
+  // 每次打开资产，样张类别回到默认「落地页」
+  demoVariant = "landing";
+  $("#variantSeg").querySelectorAll("button").forEach(x=>x.classList.toggle("on", x.dataset.variant==="landing"));
   $("#downloadBtn").href = p.hasPackFile ? ("/download/"+encodeURIComponent(name)) : "#";
-  $("#downloadBtn").style.opacity = p.hasPackFile ? "1":".4";
+  $("#downloadBtn").classList.toggle("is-disabled", !p.hasPackFile);
+  $("#downloadBtn").title = p.hasPackFile ? "下载 .stylepack" : "该资产没有可下载的 .stylepack 文件";
   $("#revealBtn").onclick = ()=>fetch("/api/reveal",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({name})});
+  if(_closeTimer){ clearTimeout(_closeTimer); _closeTimer=null; }
+  $("#overlay").classList.remove("closing");
   $("#overlay").classList.add("show");
+  setViewMode("spec");
 }
-function closeDetail(){ $("#overlay").classList.remove("show"); $("#viewerFrame").src="about:blank"; }
+// 按资产展示"是被哪个模型、是否视觉提炼的"——直接读该资产 manifest 里记录的 capabilities，
+// 而非顶栏的"当前模型"。老资产没有该字段时优雅兜底。
+function renderAssetModel(p){
+  const el = $("#assetModel"); if(!el) return;
+  const cap = p && p.capabilities;
+  if(!cap){
+    el.className = "asset-model show";
+    el.innerHTML = '<span class="mdot"></span>提炼模型<span class="dim">未记录（旧资产）</span>';
+    el.title = "该资产在“记录提炼模型”特性之前生成。点「重新提炼」可用当前模型重跑并补全记录。";
+    return;
+  }
+  const vision = cap.vision === true;
+  const noVision = cap.vision === false;
+  const model = (cap.model && (cap.model.real || cap.model.configured)) || null;
+  const dot = vision ? "ok" : (noVision ? "bad" : "");
+  const visLabel = vision ? "视觉提炼" : (noVision ? "无视觉 · 结构化" : "结构化");
+  const head = model ? ("<b>"+esc(model)+"</b>") : ("<b>"+(cap.track==="vision" ? "视觉档" : "结构化档")+"</b>");
+  el.className = "asset-model show";
+  el.innerHTML = '<span class="mdot '+dot+'"></span>'+head+' · '+visLabel;
+  const parts = ["这份资产的提炼模型（非当前模型）："];
+  if(cap.model){
+    if(cap.model.configured) parts.push("配置模型："+cap.model.configured);
+    if(cap.model.real) parts.push("真实上游："+cap.model.real);
+  }
+  parts.push("视觉能力："+(vision ? "具备（视觉档：截图接地）" : (noVision ? "不具备（结构化档：布局指纹）" : "未确定")));
+  if(cap.extractedAt){ try{ parts.push("提炼时间："+new Date(cap.extractedAt).toLocaleString()); }catch(_){} }
+  el.title = parts.join("\n");
+}
+
+let _closeTimer = null;
+function closeDetail(){
+  const ov = $("#overlay");
+  ov.classList.add("closing");
+  ov.classList.remove("show");
+  // 关键：等淡出动画结束后再清空 iframe，避免关闭瞬间 iframe 变 about:blank 露出白屏；
+  // 宽度/样张切换条等也在隐藏后再复位，避免关闭过程中的尺寸跳动。
+  if(_closeTimer) clearTimeout(_closeTimer);
+  _closeTimer = setTimeout(()=>{
+    ov.classList.remove("closing");
+    $("#viewerFrame").src="about:blank";
+    $("#editorFrame").src="about:blank";
+    $("#editorWrap").classList.remove("show");
+    $("#viewerFrame").style.display="";
+    const v=document.querySelector(".viewer"); if(v) v.classList.remove("wide");
+    $("#demoBar").classList.remove("show");
+    _closeTimer = null;
+  }, 300);
+}
 $("#closeViewer").onclick = closeDetail;
+
+// —— 详情视图模式：规范 / 样张 / 微调 ——
+let viewMode = "spec";
+let demoVariant = "landing";  // 样张类别：landing/dashboard/article/shop/portfolio
+// 样张类别切换：更新高亮并重载样张 iframe（当前处于样张模式时）
+$("#variantSeg").querySelectorAll("button").forEach(b=>{
+  b.onclick=()=>{
+    demoVariant = b.dataset.variant;
+    $("#variantSeg").querySelectorAll("button").forEach(x=>x.classList.toggle("on", x===b));
+    if(currentPack && viewMode==="demo"){
+      $("#viewerFrame").src = "/packs/"+encodeURIComponent(currentPack.name)+"/demo.html?variant="+encodeURIComponent(demoVariant);
+    }
+  };
+});
+function setViewMode(mode){
+  if(!currentPack) return;
+  viewMode = mode;
+  $("#viewSeg").querySelectorAll("button").forEach(b=>b.classList.toggle("on", b.dataset.mode===mode));
+  // 样张/微调需要更宽的画面来贴近真实版心；规范保持常规宽度
+  const viewerEl = document.querySelector(".viewer");
+  if(viewerEl) viewerEl.classList.toggle("wide", mode==="demo" || mode==="edit");
+  // 样张类别切换条仅在样张模式显示
+  $("#demoBar").classList.toggle("show", mode==="demo");
+  const frame=$("#viewerFrame"), ed=$("#editorWrap");
+  if(mode==="edit"){
+    frame.style.display="none"; ed.classList.add("show");
+    enterEditor();
+  } else if(mode==="demo"){
+    ed.classList.remove("show"); frame.style.display="";
+    frame.onload=null;
+    frame.src = "/packs/"+encodeURIComponent(currentPack.name)+"/demo.html?variant="+encodeURIComponent(demoVariant);
+  } else { // 规范：画廊已有独立「样张」标签，载入后隐藏 preview.html 里内嵌的样张，避免重复（兼容老资产）
+    ed.classList.remove("show"); frame.style.display="";
+    frame.onload=()=>{ try{
+      const d=frame.contentDocument; if(!d) return;
+      let s=d.getElementById("hk-sample");
+      if(!s){ const df=d.querySelector(".demo-frame"); s=df?df.closest("section"):null; } // 兼容未带 id 的旧 preview.html
+      if(s) s.style.display="none";
+    }catch(_){} };
+    frame.src = currentPack.preview;
+  }
+}
+$("#viewSeg").querySelectorAll("button").forEach(b=>b.onclick=()=>setViewMode(b.dataset.mode));
+
+// —— 客户端颜色工具（对比度 / 可读文字色）——
+// 兼容 #rgb / #rrggbb / #rrggbbaa（丢弃 alpha）/ rgb()/rgba()；其它格式返回 null 走兜底。
+function normHex(v){
+  if(typeof v!=="string") return null;
+  const s=v.trim().toLowerCase();
+  let m=s.match(/^#?([0-9a-f]{8})$/); if(m) return "#"+m[1].slice(0,6);
+  m=s.match(/^#?([0-9a-f]{6})$/); if(m) return "#"+m[1];
+  m=s.match(/^#?([0-9a-f]{3})$/); if(m){const h=m[1];return "#"+h[0]+h[0]+h[1]+h[1]+h[2]+h[2];}
+  m=s.match(/^rgba?\(([^)]+)\)$/);
+  if(m){ const p=m[1].split(/[,/\s]+/).filter(Boolean); const to=n=>{let x=Math.round(parseFloat(n));if(isNaN(x))return null;x=Math.max(0,Math.min(255,x));return x.toString(16).padStart(2,"0");}; const r=to(p[0]),g=to(p[1]),b=to(p[2]); if(r&&g&&b) return "#"+r+g+b; }
+  return null;
+}
+function hexRgb(hex){ const h=normHex(hex); if(!h) return null; return {r:parseInt(h.slice(1,3),16),g:parseInt(h.slice(3,5),16),b:parseInt(h.slice(5,7),16)}; }
+function lumRgb(c){ const f=v=>{v/=255;return v<=0.03928?v/12.92:Math.pow((v+0.055)/1.055,2.4);}; return 0.2126*f(c.r)+0.7152*f(c.g)+0.0722*f(c.b); }
+function isLightHex(hex){ const c=hexRgb(hex); return c?lumRgb(c)>0.42:true; }
+function readableHex(hex){ return isLightHex(hex)?"#0b0b0f":"#ffffff"; }
+function contrastHex(a,b){ const ca=hexRgb(a),cb=hexRgb(b); if(!ca||!cb) return null; const la=lumRgb(ca),lb=lumRgb(cb); const hi=Math.max(la,lb),lo=Math.min(la,lb); return (hi+0.05)/(lo+0.05); }
+
+// —— 微调 / 分层混合 编辑器 ——
+const LAYER_CN = { color:"颜色", typography:"排版", spacing:"间距", shape:"形状", motion:"动效" };
+const LAYER_GROUPS = { color:["color"], typography:["font","fontSize","fontWeight"], spacing:["spacing"], shape:["radius","shadow"], motion:["duration","easing"] };
+const LAYER_META = { color:["mode","themeMix","contrast"], typography:["typeRatio"], spacing:[], shape:["radiusStyle","shadowUsage"], motion:["motion"] };
+let edBaseTokens=null, edOverrides={}, edLayerSrc={}, edWorking=null;
+const edTokCache={};
+function edVal(o){ return (o&&o.$value!=null)?o.$value:null; }
+function cloneT(o){ return JSON.parse(JSON.stringify(o)); }
+function metaOf(t){ t.$extensions=t.$extensions||{}; t.$extensions["haokan.meta"]=t.$extensions["haokan.meta"]||{}; return t.$extensions["haokan.meta"]; }
+
+async function enterEditor(){
+  const pack=currentPack;
+  $("#editorControls").innerHTML = `<div class="hint">加载 tokens…</div>`;
+  let base;
+  try{ base = await (await fetch(pack.tokens)).json(); }
+  catch{ $("#editorControls").innerHTML='<div class="hint">无法加载该资产的 tokens</div>'; return; }
+  if(currentPack!==pack || viewMode!=="edit") return;
+  edBaseTokens=base; edOverrides={}; edLayerSrc={}; edWorking=null;
+  buildEditorControls();
+  const frame=$("#editorFrame");
+  frame.onload=()=>applyEditor();
+  frame.src="/packs/"+encodeURIComponent(pack.name)+"/demo.html?bare=1";
+}
+
+function buildEditorControls(){
+  const t=edBaseTokens;
+  const cv=(role,def)=>{ const v=normHex(edVal((t.color||{})[role])); return v||def; };
+  const meta=(t.$extensions&&t.$extensions["haokan.meta"])||{};
+  const isDark=meta.mode==="dark";
+  const dfBg=isDark?"#0b0b0f":"#ffffff", dfFg=isDark?"#e8e8ea":"#16181d";
+  const dens=meta.density||"balanced";
+  const curFont=edVal((t.font||{}).primary)||"";
+  const baseRadius=t.radius&&t.radius.default? Math.round(parseFloat(edVal(t.radius.default))||8) : 8;
+  const fonts=[curFont,"Inter","system-ui","Georgia","JetBrains Mono","Playfair Display","IBM Plex Sans"].filter((f,i,a)=>f&&a.indexOf(f)===i);
+  const others=LIBRARY.filter(p=>p.name!==currentPack.name);
+  const layerRows = others.length ? `
+    <div class="ed-sec">
+      <div class="ed-title">分层混合</div>
+      <div class="ed-note">从其他资产整层借用。每层内部保持自洽（整取自一个真实站点），跨层搭配是你的编辑决策——比"数值平均"更不易糊成 AI 味。</div>
+      ${["color","typography","spacing","shape","motion"].map(l=>`
+        <div class="ed-row"><label>${LAYER_CN[l]}</label>
+          <select class="ed-select" data-layer="${l}">
+            <option value="">沿用本资产</option>
+            ${others.map(p=>`<option value="${esc(p.name)}">${esc(p.source)}</option>`).join("")}
+          </select>
+        </div>`).join("")}
+    </div>` : "";
+  $("#editorControls").innerHTML = `
+    <div class="ed-sec">
+      <div class="ed-title">快速微调</div>
+      <div class="ed-row"><label>主色</label><div class="ed-ctl"><input type="color" class="ed-color" data-k="primary" value="${cv("primary","#3b82f6")}"><input class="ed-hex" data-hex="primary" value="${cv("primary","#3b82f6")}"></div></div>
+      <div class="ed-row"><label>强调</label><div class="ed-ctl"><input type="color" class="ed-color" data-k="accent" value="${cv("accent-1",cv("secondary","#8b5cf6"))}"><input class="ed-hex" data-hex="accent" value="${cv("accent-1",cv("secondary","#8b5cf6"))}"></div></div>
+      <div class="ed-row"><label>背景</label><div class="ed-ctl"><input type="color" class="ed-color" data-k="bg" value="${cv("background",dfBg)}"><input class="ed-hex" data-hex="bg" value="${cv("background",dfBg)}"></div></div>
+      <div class="ed-row"><label>文字</label><div class="ed-ctl"><input type="color" class="ed-color" data-k="fg" value="${cv("foreground",dfFg)}"><input class="ed-hex" data-hex="fg" value="${cv("foreground",dfFg)}"></div></div>
+      <div class="ed-row"><label>字体</label><select class="ed-select" data-k="font">${fonts.map(f=>`<option ${f===curFont?"selected":""}>${esc(f)}</option>`).join("")}</select></div>
+      <div class="ed-row"><label>圆角</label><div class="ed-ctl"><input type="range" class="ed-range" data-k="radius" min="0" max="26" step="1" value="${baseRadius}"><span class="ed-val" id="edRadiusVal">${baseRadius}px</span></div></div>
+      <label class="ed-check"><input type="checkbox" id="edPill">按钮 / 标签用胶囊圆角</label>
+      <div class="ed-row"><label>密度</label><div class="ed-seg" data-k="density">
+        <button data-v="compact" class="${dens==="compact"?"on":""}">紧凑</button>
+        <button data-v="balanced" class="${dens==="balanced"?"on":""}">均衡</button>
+        <button data-v="spacious" class="${dens==="spacious"?"on":""}">宽松</button>
+      </div></div>
+    </div>
+    ${layerRows}
+    <div class="ed-sec">
+      <div class="ed-title">可读性 · WCAG 对比度</div>
+      <div class="ed-contrast" id="edContrast"></div>
+    </div>
+    <div class="ed-sec">
+      <div class="ed-title">存为新资产</div>
+      <div class="ed-note">非破坏性：新建一个资产，原资产不动。集成规则（CSS 变量 / Tailwind / AI 规则）与预览按新数值重生成，出处记入 manifest。</div>
+      <input class="ed-label" id="edLabel" placeholder="备注（可选，如：暖色版）">
+      <div class="ed-actions">
+        <button class="btn primary" id="edSave">存为新资产</button>
+        <button class="btn" id="edReset">重置改动</button>
+      </div>
+    </div>`;
+  wireEditorControls();
+}
+
+function wireEditorControls(){
+  const box=$("#editorControls");
+  box.querySelectorAll(".ed-color").forEach(inp=>{
+    const k=inp.dataset.k, hex=box.querySelector('[data-hex="'+k+'"]');
+    inp.oninput=()=>{ edOverrides[k]=inp.value; if(hex) hex.value=inp.value; applyEditor(); };
+  });
+  box.querySelectorAll(".ed-hex[data-hex]").forEach(inp=>{
+    const k=inp.dataset.hex, col=box.querySelector('.ed-color[data-k="'+k+'"]');
+    inp.onchange=()=>{ const v=normHex(inp.value); if(v){ edOverrides[k]=v; inp.value=v; if(col) col.value=v; applyEditor(); } };
+  });
+  const fontSel=box.querySelector('.ed-select[data-k="font"]');
+  if(fontSel) fontSel.onchange=()=>{ edOverrides.font=fontSel.value; applyEditor(); };
+  const rad=box.querySelector('.ed-range[data-k="radius"]');
+  if(rad) rad.oninput=()=>{ edOverrides.radius=parseInt(rad.value,10); $("#edRadiusVal").textContent=rad.value+"px"; applyEditor(); };
+  const pill=$("#edPill");
+  if(pill) pill.onchange=()=>{ edOverrides.pill=pill.checked; applyEditor(); };
+  const densSeg=box.querySelector('.ed-seg[data-k="density"]');
+  if(densSeg) densSeg.querySelectorAll("button").forEach(b=>b.onclick=()=>{ densSeg.querySelectorAll("button").forEach(x=>x.classList.remove("on")); b.classList.add("on"); edOverrides.density=b.dataset.v; applyEditor(); });
+  box.querySelectorAll(".ed-select[data-layer]").forEach(sel=>{
+    sel.onchange=async ()=>{
+      const layer=sel.dataset.layer, src=sel.value;
+      edLayerSrc[layer]=src||null;
+      if(src && !edTokCache[src]){
+        const p=LIBRARY.find(x=>x.name===src);
+        if(p){ try{ edTokCache[src]=await (await fetch(p.tokens)).json(); }catch{} }
+      }
+      applyEditor();
+    };
+  });
+  $("#edReset").onclick=()=>{ edOverrides={}; edLayerSrc={}; buildEditorControls(); applyEditor(); };
+  $("#edSave").onclick=saveDerived;
+}
+
+function computeWorking(){
+  const t=cloneT(edBaseTokens);
+  // 1) 分层混合：整层替换 token 组 + 相关 meta
+  for(const layer of Object.keys(edLayerSrc)){
+    const src=edLayerSrc[layer]; if(!src) continue;
+    const srcTok=edTokCache[src]; if(!srcTok) continue;
+    for(const g of LAYER_GROUPS[layer]) t[g]= srcTok[g]? cloneT(srcTok[g]) : {};
+    const sMeta=(srcTok.$extensions&&srcTok.$extensions["haokan.meta"])||{};
+    const m=metaOf(t);
+    for(const key of LAYER_META[layer]) if(key in sMeta) m[key]=cloneT(sMeta[key]);
+  }
+  // 2) 快速微调覆盖
+  const o=edOverrides; t.color=t.color||{};
+  const setColor=(role,hex)=>{ if(hex) t.color[role]={$type:"color",$value:hex}; };
+  if(o.primary) setColor("primary",o.primary);
+  if(o.accent) setColor("accent-1",o.accent);
+  if(o.bg){ setColor("background",o.bg); metaOf(t).mode=isLightHex(o.bg)?"light":"dark"; }
+  if(o.fg) setColor("foreground",o.fg);
+  if(o.font){ t.font=t.font||{}; t.font.primary={$type:"fontFamily",$value:o.font}; }
+  if(o.radius!=null){
+    const r=o.radius, rc=Math.round(r*1.8), radius={};
+    radius["r-"+r]={$type:"dimension",$value:r+"px"};
+    if(rc!==r) radius["r-"+rc]={$type:"dimension",$value:rc+"px"};
+    radius.default={$type:"dimension",$value:r+"px"};
+    if(o.pill) radius.full={$type:"dimension",$value:"999px"};
+    t.radius=radius;
+  } else if(o.pill!=null){
+    t.radius=t.radius||{};
+    if(o.pill) t.radius.full={$type:"dimension",$value:"999px"}; else delete t.radius.full;
+  }
+  if(o.density) metaOf(t).density=o.density;
+  return t;
+}
+
+function applyEditor(){
+  if(!edBaseTokens) return;
+  const t=computeWorking(); edWorking=t;
+  const frame=$("#editorFrame");
+  try{ if(frame.contentWindow && frame.contentWindow.hkRenderTokens) frame.contentWindow.hkRenderTokens(t); }catch(_){}
+  updateContrast(t);
+}
+
+function updateContrast(t){
+  const box=$("#edContrast"); if(!box) return;
+  const c=t.color||{}, meta=(t.$extensions&&t.$extensions["haokan.meta"])||{};
+  const isDark=meta.mode==="dark";
+  const bg=normHex(edVal(c.background))||(isDark?"#0b0b0f":"#ffffff");
+  const fg=normHex(edVal(c.foreground))||(isDark?"#e8e8ea":"#16181d");
+  const primary=normHex(edVal(c.primary))||"#3b82f6";
+  const rows=[
+    {name:"正文 / 背景", ratio:contrastHex(fg,bg)},
+    {name:"主色按钮文字", ratio:contrastHex(readableHex(primary),primary)},
+  ];
+  box.innerHTML=rows.map(r=>{
+    const v=r.ratio;
+    const cls=v==null?"":(v>=4.5?"ok":(v>=3?"warn":"bad"));
+    const tip=v==null?"—":(v>=4.5?"达标 AA":(v>=3?"仅大字":"不足"));
+    return `<div class="ed-cbadge ${cls}"><span class="nm">${esc(r.name)}</span><span class="tip">${tip}</span><span class="ck">${v==null?"—":v.toFixed(2)+":1"}</span></div>`;
+  }).join("");
+}
+
+async function saveDerived(){
+  if(!currentPack||!edWorking) return;
+  const btn=$("#edSave"); const o=btn.textContent; btn.disabled=true; btn.textContent="保存中…";
+  const composition={};
+  for(const l of Object.keys(edLayerSrc)) if(edLayerSrc[l]) composition[l]=edLayerSrc[l];
+  try{
+    const j=await (await fetch("/api/derive",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({base:currentPack.name,tokens:edWorking,composition,label:$("#edLabel").value.trim()})})).json();
+    if(j.ok){
+      btn.textContent="已保存 ✓";
+      await load();
+      setTimeout(()=>{ const np=LIBRARY.find(p=>p.name===j.name); closeDetail(); if(np) openDetail(np.name); },550);
+    } else { alert("保存失败："+(j.error||"未知")); btn.disabled=false; btn.textContent=o; }
+  }catch(e){ alert("保存失败："+e.message); btn.disabled=false; btn.textContent=o; }
+}
 $("#overlay").onclick = (e)=>{ if(e.target.id==="overlay") closeDetail(); };
 $("#q").addEventListener("input", render);
 
@@ -588,9 +1251,9 @@ $("#importGo").onclick = async ()=>{
 
 // —— lint ——
 const lintModal = $("#lintModal");
-$("#lintBtn").onclick = ()=>{ if(!currentPack) return; $("#lintPackName").textContent=currentPack.source; $("#lintResult").innerHTML=""; lintModal.classList.add("show"); };
+const lintFsPicker = setupFolderPicker({ browseBtn: $("#lintBrowse"), input: $("#lintPath"), panel: $("#lintFs") });
+$("#lintBtn").onclick = ()=>{ if(!currentPack) return; $("#lintPackName").textContent=currentPack.source; $("#lintResult").innerHTML=""; lintFsPicker.hide(); lintModal.classList.add("show"); };
 $("#lintCancel").onclick = ()=>lintModal.classList.remove("show");
-if(NATIVE?.pickDirectory){ $("#lintBrowse").style.display=""; $("#lintBrowse").onclick = async ()=>{ const p=await NATIVE.pickDirectory(); if(p) $("#lintPath").value=p; }; }
 $("#lintRun").onclick = async ()=>{
   const p = $("#lintPath").value.trim(); if(!p||!currentPack) return;
   $("#lintResult").innerHTML = `<div class="hint">校验中…</div>`;
@@ -625,9 +1288,21 @@ function lintHtml(rep){
     ${rep.truncated?`<div class="hint">违规过多，仅显示前部分。</div>`:""}`;
 }
 
-// —— 应用到项目 ——
+// —— 应用到项目 · 引导式向导 ——
 const applyModal = $("#applyModal");
-let pendingTarget = null;
+
+// AI 工具 → 后端写入目标 + 落地文件（用户只选工具，不用记文件名）
+const APPLY_TOOLS = [
+  { id:"claude",   target:"claude",   name:"Claude Code",    file:"CLAUDE.md" },
+  { id:"codex",    target:"agents",   name:"Codex",          file:"AGENTS.md" },
+  { id:"cursor",   target:"cursor",   name:"Cursor",         file:".cursorrules" },
+  { id:"kiro",     target:"kiro",     name:"Kiro",           file:".kiro/steering/…" },
+  { id:"copilot",  target:"copilot",  name:"GitHub Copilot", file:".github/copilot-instructions.md" },
+  { id:"windsurf", target:"windsurf", name:"Windsurf",       file:".windsurfrules" },
+  { id:"other",    target:"agents",   name:"其他 / 不确定",  file:"AGENTS.md（多数工具通用）", span:true },
+];
+let applyTool = null;
+
 const OP_LABEL = {
   "create":"新建文件",
   "append-block":"在文件末尾追加规范标记块（保留原内容，先自动备份 .haokan.bak）",
@@ -635,59 +1310,161 @@ const OP_LABEL = {
   "overwrite":"覆盖该专属 steering 文件",
   "write-assets":"写入独立目录 haokan-design/（不改动任何现有文档）",
 };
-function showApplyMain(){ $("#applyPreview").style.display="none"; $("#applyMain").style.display=""; }
-$("#applyBtn").onclick = ()=>{ if(!currentPack) return; $("#applyHint").textContent=""; showApplyMain(); applyModal.classList.add("show"); };
+
+const WIZ_PANES = ["wizTool","wizPath","wizPreview","wizDone","wizManual"];
+function showPane(id){ WIZ_PANES.forEach(p=>{ const el=$("#"+p); if(el) el.style.display = p===id?"":"none"; }); }
+// n: 1..3 高亮步骤；0 表示隐藏步骤条（完成页 / 手动面板）
+function setWizSteps(n){
+  $("#wizSteps").style.display = n>0 ? "" : "none";
+  applyModal.querySelectorAll(".wiz-step").forEach(s=>{
+    const k=+s.dataset.s;
+    s.classList.toggle("active", k===n);
+    s.classList.toggle("done", k<n);
+  });
+}
+
+function renderToolGrid(){
+  $("#toolGrid").innerHTML = APPLY_TOOLS.map(t=>
+    `<button class="tool-card${t.span?" span2":""}" data-tool="${t.id}"><span class="tc-name">${esc(t.name)}</span><span class="tc-file">${esc(t.file)}</span></button>`
+  ).join("");
+  $("#toolGrid").querySelectorAll("[data-tool]").forEach(b=>b.onclick=()=>{
+    applyTool = APPLY_TOOLS.find(t=>t.id===b.dataset.tool);
+    gotoPath();
+  });
+}
+
+function gotoTool(){ showPane("wizTool"); setWizSteps(1); }
+function gotoPath(){
+  $("#toolChosen").innerHTML =
+    `<span class="tc-name">${esc(applyTool.name)}</span><span class="tc-file">→ ${esc(applyTool.file)}</span>`+
+    `<button class="chg" id="toolChg">换工具</button>`;
+  $("#toolChg").onclick = gotoTool;
+  $("#applyPathHint").textContent = "";
+  $("#applyFs").style.display = "none"; // 每次进入选项目步骤先收起浏览器
+  showPane("wizPath"); setWizSteps(2);
+  setTimeout(()=>$("#applyPath").focus(), 60);
+}
+function openApply(){
+  if(!currentPack) return;
+  applyTool = null;
+  $("#applyCopyHint").textContent = "";
+  renderToolGrid();
+  gotoTool();
+  applyModal.classList.add("show");
+}
+
+$("#applyBtn").onclick = openApply;
 $("#applyClose").onclick = ()=>applyModal.classList.remove("show");
-if(NATIVE?.pickDirectory){ $("#applyBrowse").style.display=""; $("#applyBrowse").onclick=async()=>{ const p=await NATIVE.pickDirectory(); if(p) $("#applyPath").value=p; }; }
+$("#applyDoneClose").onclick = ()=>applyModal.classList.remove("show");
+$("#applyManualClose").onclick = ()=>applyModal.classList.remove("show");
+$("#wizBack1").onclick = gotoTool;
+$("#wizBack2").onclick = gotoPath;
+$("#applyManualLink").onclick = ()=>{ showPane("wizManual"); setWizSteps(0); };
+$("#wizManualBack").onclick = gotoTool;
+$("#applyModal").onclick = (e)=>{ if(e.target.id==="applyModal") applyModal.classList.remove("show"); };
+
+// 文件夹浏览器（应用向导）：复用通用组件
+const applyFsPicker = setupFolderPicker({ browseBtn: $("#applyBrowse"), input: $("#applyPath"), panel: $("#applyFs"), onPick: ()=>{ $("#applyPathHint").textContent = ""; } });
+
+// 复制粘贴（手动回退面板）
 applyModal.querySelectorAll("[data-copy]").forEach(b=>b.onclick=async()=>{
   if(!currentPack) return;
   try{
     const txt = await (await fetch("/packs/"+encodeURIComponent(currentPack.name)+"/"+b.dataset.copy)).text();
     await navigator.clipboard.writeText(txt);
     const o=b.textContent; b.textContent="已复制 ✓"; setTimeout(()=>b.textContent=o,1300);
-  }catch(e){ $("#applyHint").textContent="复制失败："+e.message; }
+  }catch(e){ $("#applyCopyHint").textContent="复制失败："+e.message; }
 });
-// 写入前先预览
-applyModal.querySelectorAll("[data-write]").forEach(b=>b.onclick=async()=>{
-  if(!currentPack) return;
-  const path=$("#applyPath").value.trim();
-  if(!path){ $("#applyHint").textContent="请先填写项目路径"; return; }
-  pendingTarget=b.dataset.write;
-  $("#applyHint").textContent="生成预览…";
+
+// 步骤 2 → 3：生成预览 + 安全检查
+$("#wizToPreview").onclick = async ()=>{
+  if(!currentPack||!applyTool) return;
+  const p=$("#applyPath").value.trim();
+  if(!p){ $("#applyPathHint").textContent="请先填写项目根目录路径"; return; }
+  $("#applyPathHint").textContent="正在做安全检查并生成预览…";
   try{
-    const j=await (await fetch("/api/apply/preview",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({name:currentPack.name,path,target:pendingTarget})})).json();
-    if(!j.ok){ $("#applyHint").textContent="预览失败："+(j.error||"未知"); return; }
-    $("#applyHint").textContent="";
-    $("#applyPreviewOps").innerHTML = (j.actions||[]).map(a=>`· <code>${esc(a.path)}</code> → ${esc(OP_LABEL[a.op]||a.op)}`).join("<br>");
-    $("#applyPreviewBlock").textContent = j.block ? j.block : (j.fullSpec ? "（写入完整规范 ai-rules.md 全文到该 steering 文件）" : "（仅写入 haokan-design/ 目录文件，不修改任何现有文档）");
-    $("#applyPreviewAssets").textContent = (j.assets&&j.assets.length) ? ("同时写入独立目录："+j.assets.join("，")) : "";
-    $("#applyMain").style.display="none"; $("#applyPreview").style.display="";
-  }catch(e){ $("#applyHint").textContent="预览失败："+e.message; }
-});
-$("#applyPreviewCancel").onclick = showApplyMain;
+    const j=await (await fetch("/api/apply/preview",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({name:currentPack.name,path:p,target:applyTool.target})})).json();
+    if(!j.ok){ $("#applyPathHint").textContent="预览失败："+(j.error||"未知"); return; }
+    $("#applyPathHint").textContent="";
+    renderPreview(j);
+    showPane("wizPreview"); setWizSteps(3);
+  }catch(e){ $("#applyPathHint").textContent="预览失败："+e.message; }
+};
+
+function renderPreview(j){
+  // —— 安全检查：给出明确的可回退/风险信号 ——
+  const g = j.guard || {};
+  const parts = [];
+  if(g.isGit) parts.push(`<div class="g-ok">✓ 检测到 Git 仓库 — 写入后可用 <code>git checkout .</code> 一键回退，最安全</div>`);
+  else parts.push(`<div class="g-warn">! 未检测到 Git — 首次修改会自动备份为 <code>.haokan.bak</code>；建议先提交或备份</div>`);
+  if(g.looksLikeProject===false) parts.push(`<div class="g-warn">! 该目录没有常见项目标志（package.json / .git 等），请确认这确实是你的项目根目录</div>`);
+  if(g.isHomeOrRoot) parts.push(`<div class="g-danger">⚠ 这是用户主目录或磁盘根目录 — 强烈建议改为指向具体的项目目录</div>`);
+  $("#guardBox").innerHTML = parts.join("");
+
+  // —— 将执行的操作 & 内容 ——
+  $("#applyPreviewOps").innerHTML = (j.actions||[]).map(a=>`· <code>${esc(a.path)}</code> → ${esc(OP_LABEL[a.op]||a.op)}`).join("<br>");
+  $("#applyPreviewBlock").textContent = j.block ? j.block : (j.fullSpec ? "（写入完整规范 ai-rules.md 全文到该 steering 文件）" : "（仅写入 haokan-design/ 目录文件，不修改任何现有文档）");
+  $("#applyPreviewAssets").textContent = (j.assets&&j.assets.length) ? ("同时写入独立目录（不污染现有文档）："+j.assets.join("，")) : "";
+
+  // —— 危险目录（主目录/磁盘根 或 不像项目）需勾选确认才能写入 ——
+  const risky = !!(g.isHomeOrRoot || g.looksLikeProject===false);
+  const gate = $("#applyGate"), ck = $("#applyGateCk"), confirm = $("#applyPreviewConfirm");
+  if(risky){
+    gate.style.display=""; ck.checked=false; confirm.disabled=true;
+    ck.onchange=(e)=>{ confirm.disabled = !e.target.checked; };
+  } else {
+    gate.style.display="none"; confirm.disabled=false;
+  }
+}
+
+// 确认写入 → 完成页
 $("#applyPreviewConfirm").onclick = async ()=>{
-  if(!currentPack||!pendingTarget) return;
-  const path=$("#applyPath").value.trim();
-  $("#applyPreviewConfirm").disabled=true;
+  if(!currentPack||!applyTool) return;
+  const p=$("#applyPath").value.trim();
+  const btn=$("#applyPreviewConfirm"); const o=btn.textContent; btn.disabled=true; btn.textContent="写入中…";
   try{
-    const j=await (await fetch("/api/apply",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({name:currentPack.name,path,target:pendingTarget})})).json();
-    showApplyMain();
-    $("#applyHint").textContent = j.ok ? ("✔ 已写入："+j.written.join("；")+(j.notes&&j.notes.length?("　"+j.notes.join("；")):"")) : ("✗ 失败："+(j.error||"未知"));
-  }catch(e){ showApplyMain(); $("#applyHint").textContent="✗ 请求失败："+e.message; }
-  finally{ $("#applyPreviewConfirm").disabled=false; }
+    const j=await (await fetch("/api/apply",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({name:currentPack.name,path:p,target:applyTool.target})})).json();
+    if(j.ok){
+      $("#applyDoneMsg").innerHTML = "已写入："+ (j.written||[]).map(w=>`<code>${esc(w)}</code>`).join("、") + ((j.notes&&j.notes.length)?("<br>"+j.notes.map(esc).join("<br>")):"");
+      $("#applyDoneNext").innerHTML = `下一步：让 <b>${esc(applyTool.name)}</b> 照常生成 / 修改 UI，它会自动读取刚写入的设计规范。产出后回到详情页点「校验项目」，用设计 token 回归检查是否守规矩、有没有"AI 味"。`;
+      showPane("wizDone"); setWizSteps(0);
+    } else {
+      $("#guardBox").innerHTML = `<div class="g-danger">✗ 写入失败：${esc(j.error||"未知")}</div>` + $("#guardBox").innerHTML;
+      btn.disabled=false;
+    }
+  }catch(e){
+    $("#guardBox").innerHTML = `<div class="g-danger">✗ 请求失败：${esc(e.message)}</div>` + $("#guardBox").innerHTML;
+    btn.disabled=false;
+  } finally{ btn.textContent=o; }
 };
 
 // —— 对比 ——
 const cmpModal = $("#cmpModal");
-$("#cmpClose").onclick = ()=>cmpModal.classList.remove("show");
+let cmpPacks=[], cmpToks=[], cmpMode="token";
+$("#cmpClose").onclick = ()=>{ cmpModal.classList.remove("show"); $("#cmpDemos").innerHTML=""; };
 $("#selCompare").onclick = async ()=>{
   const names = [...selected];
-  const packs = names.map(n=>LIBRARY.find(p=>p.name===n)).filter(Boolean);
+  cmpPacks = names.map(n=>LIBRARY.find(p=>p.name===n)).filter(Boolean);
   cmpModal.classList.add("show");
+  renderCmpMode("token");
   $("#cmpBody").innerHTML = `<div class="hint">加载 token…</div>`;
-  const toks = await Promise.all(packs.map(p=>fetch(p.tokens).then(r=>r.json()).catch(()=>({}))));
-  $("#cmpBody").innerHTML = packs.map((p,i)=>cmpCol(p,toks[i])).join("");
+  cmpToks = await Promise.all(cmpPacks.map(p=>fetch(p.tokens).then(r=>r.json()).catch(()=>({}))));
+  $("#cmpBody").innerHTML = cmpPacks.map((p,i)=>cmpCol(p,cmpToks[i])).join("");
 };
+function renderCmpMode(mode){
+  cmpMode=mode;
+  $("#cmpSeg").querySelectorAll("button").forEach(b=>b.classList.toggle("on", b.dataset.mode===mode));
+  const tokenView=$("#cmpTokenView"), demoView=$("#cmpDemos");
+  if(mode==="demo"){
+    tokenView.style.display="none"; demoView.style.display="";
+    $("#cmpDesc").textContent="同一份中立内容，套用各资产的设计 token 与布局原型并排渲染——差异来自设计语言与构图本身，而非页面内容。";
+    demoView.innerHTML = cmpPacks.map(p=>`<div class="cmp-demo"><div class="cd-h"><span class="cdot" style="background:${esc(p.primaryColor)}"></span>${esc(p.source)}</div><iframe loading="lazy" src="/packs/${encodeURIComponent(p.name)}/demo.html?bare=1"></iframe></div>`).join("");
+  } else {
+    demoView.style.display="none"; demoView.innerHTML=""; tokenView.style.display="";
+    $("#cmpDesc").textContent="并排比较所选资产的 token 系统。";
+  }
+}
+$("#cmpSeg").querySelectorAll("button").forEach(b=>b.onclick=()=>renderCmpMode(b.dataset.mode));
 function tokVals(obj){ return Object.values(obj||{}).map(t=>t.$value); }
 function cmpCol(p,tok){
   const palette = Object.entries(tok.color||{}).map(([role,t])=>`<div class="cmp-sw" title="${role} ${t.$value}" style="background:${t.$value}"></div>`).join("");
@@ -734,7 +1511,39 @@ function renderModelDetail(){
     ${m.vision&&m.vision.reply?`<div class="model-row"><span class="k">探测回执</span><span class="v"><div class="model-reply">${esc(m.vision.reply)}</div></span></div>`:""}
     ${m.vision&&m.vision.detail?`<div class="model-row"><span class="k">说明</span><span class="v muted">${esc(m.vision.detail)}</span></div>`:""}
     <div class="model-row"><span class="k">端点</span><span class="v muted">${esc(m.endpoint||"—")}</span></div>
-    <div class="model-row"><span class="k">配置来源</span><span class="v muted">${esc(m.configSource||"—")}</span></div>`;
+    <div class="model-row"><span class="k">配置来源</span><span class="v muted">${esc(m.configSource||"—")}${m.usingApp?'　<span class="cap-badge">App 专用</span>':""}</span></div>
+    ${capComparison(m)}`;
+}
+// 无视觉 vs 有视觉：两档能力对比，高亮当前模型命中的一档
+function capComparison(m){
+  const has = m.vision && m.vision.supported === true;   // 明确有视觉
+  const no  = m.vision && m.vision.supported === false;  // 明确无视觉
+  const curCol = has ? "vision" : (no ? "novis" : null); // null=未确定，不高亮
+  const rows = [
+    ["设计 token（色彩 / 字体 / 间距 / 圆角 / 动效）", true, true],
+    ["布局指纹（容器宽 / 栅格 / Hero 构图 / 留白，确定性抽取）", true, true],
+    ["布局原型化样张", true, true],
+    ["结构化布局规范 + Do/Don't", true, true],
+    ["视觉构图 / 审美规范（模型真的“看”了页面）", false, true],
+    ["像素级封面挑选 + 参考截图对照评估", false, true],
+  ];
+  const ynovis = curCol==="novis" ? " active" : "";
+  const yvis = curCol==="vision" ? " active" : "";
+  const cell = (on)=> on ? '<span class="yes">✓</span>' : '<span class="no">—</span>';
+  const curLabel = has
+    ? '当前模型具备视觉 → 命中<b>「有视觉」</b>档（完整天花板）。'
+    : (no
+      ? '当前模型<b>无视觉</b> → 命中<b>「无视觉」</b>档：仍能提炼 token 与确定性布局指纹并驱动样张，但拿不到“模型看图后的构图/审美规范”。想要完整能力，请在「模型设置」里换一个具备视觉的模型。'
+      : '当前模型视觉能力<b>未确定</b>（探测不明确）。可在「模型设置」里换模型并重新探测。');
+  return `
+    <div class="cap-head">两档能力对比</div>
+    <table class="cap-cmp">
+      <thead><tr><th>能力</th><th class="c${ynovis}">无视觉模型</th><th class="c${yvis}">有视觉模型</th></tr></thead>
+      <tbody>
+        ${rows.map(r=>`<tr><td>${esc(r[0])}</td><td class="c${ynovis}">${cell(r[1])}</td><td class="c${yvis}">${cell(r[2])}</td></tr>`).join("")}
+      </tbody>
+    </table>
+    <div class="cap-note">${curLabel}</div>`;
 }
 async function loadModel(force){
   try{
@@ -749,7 +1558,79 @@ $("#modelClose").onclick = ()=>modelModal.classList.remove("show");
 $("#modelRefresh").onclick = ()=>loadModel(true);
 $("#modelModal").onclick = (e)=>{ if(e.target.id==="modelModal") modelModal.classList.remove("show"); };
 
-document.addEventListener("keydown",(e)=>{ if(e.key==="Escape"){ closeDetail(); [addModal,importModal,lintModal,applyModal,cmpModal,modelModal].forEach(m=>m.classList.remove("show")); } });
+// —— 模型设置（App 专用，独立于 Claude Code）——
+const modelCfgModal = $("#modelCfgModal");
+async function openModelCfg(){
+  $("#cfgResult").className = "cfg-result";
+  try{
+    const j = await (await fetch("/api/model/config")).json();
+    $("#cfgBase").value = j.app.baseURL || "";
+    $("#cfgModel").value = j.app.model || "";
+    $("#cfgToken").value = "";
+    $("#cfgToken").placeholder = j.app.hasToken ? ("已保存 "+j.app.tokenMask+"（留空则不变）") : "sk-…";
+  }catch{ /* ignore */ }
+  modelCfgModal.classList.add("show");
+}
+function cfgResultHtml(info){
+  if(!info) return "";
+  const v = visLabel(info.vision);
+  const tier = info.vision && info.vision.supported===true ? "有视觉档（完整天花板）" : (info.vision && info.vision.supported===false ? "无视觉档" : "视觉未确定");
+  return `连通：${info.ok?'<span style="color:var(--green)">✓ 成功</span>':'<span style="color:var(--red)">✗ 失败</span>'}`
+    + (info.real?`　实际上游：<b>${esc(info.real)}</b>`:"")
+    + `<br>视觉：<span class="vb">${v.text}</span>　→　将启用：<b>${tier}</b>`
+    + (info.vision&&info.vision.reply?`<br><span class="muted">探测回执：${esc(info.vision.reply)}</span>`:"")
+    + (info.error?`<br><span class="muted">${esc(info.error)}</span>`:"");
+}
+function payloadFromCfg(){
+  return { baseURL:$("#cfgBase").value.trim(), authToken:$("#cfgToken").value.trim(), model:$("#cfgModel").value.trim() };
+}
+$("#modelSettings").onclick = openModelCfg;
+$("#cfgClose").onclick = ()=>modelCfgModal.classList.remove("show");
+$("#modelCfgModal").onclick = (e)=>{ if(e.target.id==="modelCfgModal") modelCfgModal.classList.remove("show"); };
+$("#cfgTest").onclick = async ()=>{
+  const p = payloadFromCfg();
+  if(!p.baseURL||!p.model){ const r=$("#cfgResult"); r.className="cfg-result show bad"; r.innerHTML="请先填写端点 baseURL 与模型名"; return; }
+  const r=$("#cfgResult"); r.className="cfg-result show"; r.innerHTML="测试中（连通 + 视觉探测，约数秒）…";
+  try{
+    const j = await (await fetch("/api/model/config/test",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify(p)})).json();
+    if(!j.ok && j.error){ r.className="cfg-result show bad"; r.innerHTML="测试失败："+esc(j.error); return; }
+    r.className = "cfg-result show "+(j.info&&j.info.ok?"ok":"bad");
+    r.innerHTML = cfgResultHtml(j.info);
+  }catch(e){ r.className="cfg-result show bad"; r.innerHTML="测试失败："+esc(e.message); }
+};
+$("#cfgSave").onclick = async ()=>{
+  const p = payloadFromCfg();
+  if(!p.baseURL||!p.model){ const r=$("#cfgResult"); r.className="cfg-result show bad"; r.innerHTML="请先填写端点 baseURL 与模型名"; return; }
+  const btn=$("#cfgSave"); const o=btn.textContent; btn.disabled=true; btn.textContent="保存中…";
+  const r=$("#cfgResult"); r.className="cfg-result show"; r.innerHTML="保存并重新探测中…";
+  try{
+    const j = await (await fetch("/api/model/config",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify(p)})).json();
+    if(j.error){ r.className="cfg-result show bad"; r.innerHTML="保存失败："+esc(j.error); }
+    else{
+      MODEL_INFO = j.info; renderModelBadge(); if(modelModal.classList.contains("show")) renderModelDetail();
+      r.className="cfg-result show "+(j.info&&j.info.ok?"ok":"bad");
+      r.innerHTML = "已保存。"+cfgResultHtml(j.info);
+    }
+  }catch(e){ r.className="cfg-result show bad"; r.innerHTML="保存失败："+esc(e.message); }
+  finally{ btn.disabled=false; btn.textContent=o; }
+};
+$("#cfgClear").onclick = async ()=>{
+  if(!confirm("清除本 App 的模型配置，回退到 Claude Code / 默认？")) return;
+  const r=$("#cfgResult"); r.className="cfg-result show"; r.innerHTML="清除并重新探测中…";
+  try{
+    const j = await (await fetch("/api/model/config/clear",{method:"POST",headers:{"content-type":"application/json"},body:"{}"})).json();
+    $("#cfgBase").value=""; $("#cfgModel").value=""; $("#cfgToken").value=""; $("#cfgToken").placeholder="sk-…";
+    if(j.info){ MODEL_INFO=j.info; renderModelBadge(); if(modelModal.classList.contains("show")) renderModelDetail(); }
+    r.className="cfg-result show ok"; r.innerHTML="已清除，已回退到 Claude Code / 默认配置。";
+  }catch(e){ r.className="cfg-result show bad"; r.innerHTML="清除失败："+esc(e.message); }
+};
+
+// 向导顶部 X 关闭
+$("#applyCloseX").onclick = ()=>applyModal.classList.remove("show");
+// 统一：点弹窗遮罩空白处关闭
+document.querySelectorAll(".modal").forEach(m=>m.addEventListener("click",(e)=>{ if(e.target===m) m.classList.remove("show"); }));
+
+document.addEventListener("keydown",(e)=>{ if(e.key==="Escape"){ closeDetail(); [addModal,importModal,lintModal,applyModal,cmpModal,modelModal,modelCfgModal].forEach(m=>m.classList.remove("show")); } });
 
 load();
 loadModel();

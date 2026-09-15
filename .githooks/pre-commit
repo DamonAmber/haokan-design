@@ -1,0 +1,17 @@
+#!/bin/sh
+# pre-commit：拦截最长边 > 2000px 的图片。
+# 对暂存区里新增/修改的位图自动缩放到上限以内，再重新加入暂存区。
+# 由 `npm run hooks:install`（或 npm install 时的 prepare）设置 core.hooksPath=.githooks 后生效。
+set -e
+
+# 暂存区中新增(A)/复制(C)/修改(M)的位图文件
+files=$(git diff --cached --name-only --diff-filter=ACM | grep -Ei '\.(png|jpe?g|webp|avif|tiff)$' || true)
+[ -z "$files" ] && exit 0
+
+# 自动缩放超标图片（保持宽高比、不放大）；守卫脚本出错会返回非 0，从而中止提交
+printf '%s\n' "$files" | tr '\n' '\0' | xargs -0 node src/image-guard.js --fix --quiet --
+
+# 把可能被缩放过的图片重新加入暂存区
+printf '%s\n' "$files" | tr '\n' '\0' | xargs -0 git add --
+
+exit 0

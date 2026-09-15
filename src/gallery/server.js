@@ -10,6 +10,17 @@ import { fileURLToPath, pathToFileURL } from "node:url";
 import AdmZip from "adm-zip";
 import { lintProject } from "../lint/linter.js";
 import { LLMProvider } from "../llm/provider.js";
+import { buildDemoDoc } from "../pack/demo.js";
+import { buildDerivedPack } from "../pack/derive.js";
+import {
+  resolveConfig,
+  configFromOverride,
+  readAppModelConfig,
+  writeAppModelConfig,
+  clearAppModelConfig,
+  appModelConfigPath,
+  maskToken,
+} from "../llm/provider.js";
 
 const ROOT = path.resolve(fileURLToPath(import.meta.url), "../../..");
 const OUTPUT_ROOT = process.env.HAOKAN_OUTPUT || path.join(ROOT, "output");
@@ -81,6 +92,8 @@ function scanLibrary() {
         createdAt: m.createdAt,
         sourceUrls: m.sourceUrls || [],
         summary: m.summary || {},
+        capabilities: m.capabilities || null,
+        layout: m.layout || null,
         cover: hasCover ? `/packs/${encodeURIComponent(entry.name)}/covers/cover.png` : null,
         preview: `/packs/${encodeURIComponent(entry.name)}/preview.html`,
         tokens: `/packs/${encodeURIComponent(entry.name)}/tokens.json`,
@@ -316,7 +329,39 @@ function buildInjectBlock(packDir) {
   return { source, aiRulesText, block };
 }
 
-const APPLY_ASSETS = ["haokan-design/ai-rules.md", "haokan-design/tokens.json", "haokan-design/css-variables.css", "haokan-design/tailwind.config.js"];
+const APPLY_ASSETS = ["haokan-design/ai-rules.md", "haokan-design/tokens.json", "haokan-design/css-variables.css", "haokan-design/tailwind.config.js", "haokan-design/reference.png"];
+
+// 工具 → 主文档相对路径（承载受管标记块的规则文件）
+const DOC_TARGETS = {
+  cursor: ".cursorrules",
+  claude: "CLAUDE.md",
+  agents: "AGENTS.md",
+  copilot: path.join(".github", "copilot-instructions.md"),
+  windsurf: ".windsurfrules",
+};
+
+// 常见项目根标志，用于判断用户填的路径是否像一个真正的项目目录（安全提示，不阻断）
+const PROJECT_MARKERS = [
+  ".git", "package.json", "pyproject.toml", "requirements.txt", "go.mod",
+  "Cargo.toml", "pom.xml", "build.gradle", "composer.json", "Gemfile",
+  "tsconfig.json", "index.html", "src",
+];
+
+// 只读地体检目标目录：是否 Git 仓库 / 是否像项目 / 是否误指到主目录或磁盘根。
+// 用于写入前给用户明确的安全信号，防止把规则误写进错误的地方。
+function inspectProject(proj) {
+  const resolved = path.resolve(proj);
+  const markers = PROJECT_MARKERS.filter((m) => fs.existsSync(path.join(resolved, m)));
+  const home = path.resolve(os.homedir());
+  const isHomeOrRoot = resolved === home || path.dirname(resolved) === resolved;
+  return {
+    path: resolved,
+    isGit: fs.existsSync(path.join(resolved, ".git")),
+    markers,
+    looksLikeProject: markers.length > 0,
+    isHomeOrRoot,
+  };
+}
 
 // 预测将发生的写入（只读，不落盘）
 function planApply(packDir, proj, target) {
@@ -327,13 +372,11 @@ function planApply(packDir, proj, target) {
     const has = BLOCK_RE.test(fs.readFileSync(full, "utf8"));
     return { path: rel, op: has ? "replace-block" : "append-block" };
   };
+  // 各 AI 工具的规则文件：统一注入受管标记块（幂等、自动备份）
+  if (DOC_TARGETS[target]) {
+    return { block, actions: [fileOp(DOC_TARGETS[target])], assets: APPLY_ASSETS };
+  }
   switch (target) {
-    case "cursor":
-      return { block, actions: [fileOp(".cursorrules")], assets: APPLY_ASSETS };
-    case "claude":
-      return { block, actions: [fileOp("CLAUDE.md")], assets: APPLY_ASSETS };
-    case "agents":
-      return { block, actions: [fileOp("AGENTS.md")], assets: APPLY_ASSETS };
     case "kiro": {
       const rel = path.join(".kiro", "steering", `haokan-${slugSource(source)}.md`);
       const exists = fs.existsSync(path.join(proj, rel));
@@ -360,6 +403,15 @@ function applyToProject(packDir, proj, target) {
     for (const f of ["css-variables.css", "tailwind.config.js"]) {
       fs.copyFileSync(path.join(packDir, "rules", f), path.join(outDir, f));
     }
+    // 参考成品视觉：把来源首屏截图作为 reference.png 一并落到项目里，ai-rules 里会引用它
+    const cover = path.join(packDir, "covers", "cover.png");
+    if (fs.existsSync(cover)) {
+      try {
+        fs.copyFileSync(cover, path.join(outDir, "reference.png"));
+      } catch {
+        /* ignore */
+      }
+    }
   };
 
   const injectInto = (rel) => {
@@ -369,16 +421,12 @@ function applyToProject(packDir, proj, target) {
     if (r.backup) notes.push("已备份原文件 → " + path.relative(proj, r.backup));
   };
 
+  if (DOC_TARGETS[target]) {
+    injectInto(DOC_TARGETS[target]);
+    return { written, notes };
+  }
+
   switch (target) {
-    case "cursor":
-      injectInto(".cursorrules");
-      break;
-    case "claude":
-      injectInto("CLAUDE.md");
-      break;
-    case "agents":
-      injectInto("AGENTS.md");
-      break;
     case "kiro": {
       // Kiro steering 本就是独立文件承载规则：写成专属文件，重复写入即覆盖，不碰其它文档
       const rel = path.join(".kiro", "steering", `haokan-${slugSource(source)}.md`);
@@ -429,6 +477,50 @@ async function handle(req, res, PORT) {
     return send(res, 200, { packs: scanLibrary(), outputRoot: OUTPUT_ROOT });
   }
 
+  // 只读目录浏览：给「应用到项目」的文件夹选择面板用（浏览器版没有原生目录选择器）。
+  // 仅返回子目录名，不返回文件内容；用于让用户在本机上导航挑选项目根目录。
+  if (pathname === "/api/fs/list" && req.method === "GET") {
+    const raw = u.searchParams.get("path");
+    let dir = raw ? expandHome(raw) : os.homedir();
+    try {
+      dir = path.resolve(dir);
+      if (!fs.statSync(dir).isDirectory()) dir = path.dirname(dir);
+    } catch {
+      dir = os.homedir(); // 路径不存在时回退到主目录
+    }
+    const isProj = (d) => [".git", "package.json", "pyproject.toml", "go.mod", "Cargo.toml", "pom.xml"].some((m) => {
+      try { return fs.existsSync(path.join(d, m)); } catch { return false; }
+    });
+    let entries;
+    try {
+      entries = fs
+        .readdirSync(dir, { withFileTypes: true })
+        .filter((e) => {
+          if (e.name.startsWith(".")) return false; // 默认隐藏点目录，减少干扰
+          if (e.isDirectory()) return true;
+          if (e.isSymbolicLink()) { try { return fs.statSync(path.join(dir, e.name)).isDirectory(); } catch { return false; } }
+          return false;
+        })
+        .map((e) => e.name)
+        .sort((a, b) => a.localeCompare(b))
+        .slice(0, 500) // 防止超大目录拖慢
+        .map((name) => {
+          const full = path.join(dir, name);
+          return { name, path: full, isProject: isProj(full) };
+        });
+    } catch (err) {
+      return send(res, 200, { ok: false, path: dir, error: "无法读取该目录（可能无权限）：" + err.message });
+    }
+    const parent = path.dirname(dir);
+    return send(res, 200, {
+      ok: true,
+      path: dir,
+      parent: parent === dir ? null : parent,
+      isProject: isProj(dir),
+      entries,
+    });
+  }
+
   // 当前模型信息 + 视觉能力（?refresh=1 强制重新探测）
   if (pathname === "/api/model" && req.method === "GET") {
     try {
@@ -436,6 +528,62 @@ async function handle(req, res, PORT) {
       return send(res, 200, info);
     } catch (err) {
       return send(res, 200, { ok: false, error: err.message, vision: { supported: null, source: "unknown" } });
+    }
+  }
+
+  // 读取 App 独立模型配置（token 脱敏返回；同时给出当前生效来源）
+  if (pathname === "/api/model/config" && req.method === "GET") {
+    const app = readAppModelConfig() || {};
+    const eff = resolveConfig();
+    return send(res, 200, {
+      app: { baseURL: app.baseURL || "", model: app.model || "", hasToken: !!app.authToken, tokenMask: maskToken(app.authToken) },
+      effective: { baseURL: eff.baseURL, model: eff.defaultModel, source: eff.source, usingApp: eff.usingApp },
+      configPath: appModelConfigPath(),
+    });
+  }
+
+  // 保存 App 独立模型配置 → 失效缓存 → 重新探测并返回
+  if (pathname === "/api/model/config" && req.method === "POST") {
+    const body = await readBody(req);
+    if (!body.baseURL || !body.model) return send(res, 400, { error: "请填写端点 baseURL 与模型名" });
+    try {
+      // token 留空则沿用已保存的（编辑时不必重输 key）
+      const existing = readAppModelConfig() || {};
+      const authToken = body.authToken && body.authToken.trim() ? body.authToken : existing.authToken;
+      writeAppModelConfig({ baseURL: body.baseURL, authToken, model: body.model });
+      _modelCache = null; // 失效模型缓存，下次读取即重新探测
+      const info = await getModelInfo(true);
+      return send(res, 200, { ok: true, info });
+    } catch (err) {
+      return send(res, 400, { error: err.message });
+    }
+  }
+
+  // 清除 App 独立模型配置（回退到 Claude Code / 默认）
+  if (pathname === "/api/model/config/clear" && req.method === "POST") {
+    clearAppModelConfig();
+    _modelCache = null;
+    try {
+      const info = await getModelInfo(true);
+      return send(res, 200, { ok: true, info });
+    } catch (err) {
+      return send(res, 200, { ok: true, info: null });
+    }
+  }
+
+  // 用临时配置测试连通 + 视觉能力（不落盘），供保存前预检
+  if (pathname === "/api/model/config/test" && req.method === "POST") {
+    const body = await readBody(req);
+    if (!body.baseURL || !body.model) return send(res, 400, { error: "请填写端点 baseURL 与模型名" });
+    try {
+      // token 留空则用已保存的（便于编辑现有配置时直接测试）
+      const existing = readAppModelConfig() || {};
+      const authToken = body.authToken && body.authToken.trim() ? body.authToken : existing.authToken;
+      const cfg = configFromOverride({ baseURL: body.baseURL, authToken, model: body.model });
+      const info = await new LLMProvider(cfg).inspect({ vision: true, timeoutMs: 30000 });
+      return send(res, 200, { ok: true, info });
+    } catch (err) {
+      return send(res, 200, { ok: false, error: err.message });
     }
   }
 
@@ -510,7 +658,7 @@ async function handle(req, res, PORT) {
       return send(res, 400, { error: "项目路径不存在或不是目录" });
     try {
       if (pathname === "/api/apply/preview") {
-        return send(res, 200, { ok: true, ...planApply(dir, proj, body.target) });
+        return send(res, 200, { ok: true, guard: inspectProject(proj), ...planApply(dir, proj, body.target) });
       }
       const r = applyToProject(dir, proj, body.target);
       return send(res, 200, { ok: true, written: r.written, notes: r.notes });
@@ -534,6 +682,27 @@ async function handle(req, res, PORT) {
     }
   }
 
+  // 派生/混合：把编辑器里改过的 tokens 存成一个全新资产（非破坏性，不动原资产）
+  if (pathname === "/api/derive" && req.method === "POST") {
+    const body = await readBody(req);
+    const baseDir = safeJoin(OUTPUT_ROOT, body.base || "");
+    if (!baseDir || !fs.existsSync(baseDir)) return send(res, 404, { error: "源资产不存在" });
+    if (!body.tokens || typeof body.tokens !== "object") return send(res, 400, { error: "缺少 tokens" });
+    try {
+      const r = buildDerivedPack({
+        baseDir,
+        baseName: body.base,
+        tokens: body.tokens,
+        composition: body.composition || {},
+        label: body.label || "",
+        outputRoot: OUTPUT_ROOT,
+      });
+      return send(res, 200, { ok: true, name: r.name });
+    } catch (err) {
+      return send(res, 400, { error: err.message });
+    }
+  }
+
   m = pathname.match(/^\/download\/(.+)$/);
   if (m && req.method === "GET") {
     const file = safeJoin(OUTPUT_ROOT, `${m[1]}.stylepack`);
@@ -554,6 +723,32 @@ async function handle(req, res, PORT) {
     return send(res, 200, { ok: true });
   }
 
+  // 活体样张：按资产 tokens 动态生成 demo 页（对老资产也有效，无需重新提炼）。
+  // 必须放在下面的 /packs/<name>/<file> 静态路由之前，否则会被当成静态文件 404。
+  m = pathname.match(/^\/packs\/([^/]+)\/demo\.html$/);
+  if (m && req.method === "GET") {
+    const dir = safeJoin(OUTPUT_ROOT, m[1]);
+    if (!dir || !fs.existsSync(dir)) return send(res, 404, { error: "not found" });
+    try {
+      const tokens = JSON.parse(fs.readFileSync(path.join(dir, "tokens.json"), "utf8"));
+      let manifest = {};
+      try {
+        manifest = JSON.parse(fs.readFileSync(path.join(dir, "manifest.json"), "utf8"));
+      } catch {
+        /* ignore */
+      }
+      const bare = u.searchParams.get("bare") === "1";
+      const variant = u.searchParams.get("variant") || "landing";
+      const hasCover = fs.existsSync(path.join(dir, "covers", "cover.png"));
+      const cover = !bare && hasCover ? `/packs/${encodeURIComponent(m[1])}/covers/cover.png` : null;
+      const html = buildDemoDoc({ tokens, cover, source: manifest.source || m[1], bare, variant });
+      res.writeHead(200, { "content-type": "text/html; charset=utf-8" });
+      return res.end(html);
+    } catch (err) {
+      return send(res, 500, { error: err.message });
+    }
+  }
+
   m = pathname.match(/^\/packs\/([^/]+)\/(.+)$/);
   if (m && req.method === "GET") {
     const dir = safeJoin(OUTPUT_ROOT, m[1]);
@@ -567,10 +762,14 @@ async function handle(req, res, PORT) {
 }
 
 // ---- 启动（可被 Electron 复用）----
-export function startServer({ port = parseInt(process.env.PORT || "4173", 10), open = false } = {}) {
-  return new Promise((resolve) => {
+// 端口被占用（4173 恰好是 Vite preview 默认端口，极易撞车）时自动顺延到下一个可用端口，
+// 避免静默失败让用户误以为看到的是画廊、实则是别的服务。
+export function startServer({ port = parseInt(process.env.PORT || "4173", 10), open = false, maxTries = 20 } = {}) {
+  return new Promise((resolve, reject) => {
+    let actualPort = port;
+    let tries = 0;
     const server = http.createServer((req, res) =>
-      handle(req, res, port).catch((err) => {
+      handle(req, res, actualPort).catch((err) => {
         try {
           send(res, 500, { error: err.message });
         } catch {
@@ -578,14 +777,25 @@ export function startServer({ port = parseInt(process.env.PORT || "4173", 10), o
         }
       })
     );
-    server.listen(port, () => {
-      const url = `http://localhost:${port}`;
+    server.on("error", (err) => {
+      if (err.code === "EADDRINUSE" && tries < maxTries) {
+        tries++;
+        actualPort = port + tries;
+        server.listen(actualPort); // 换端口重试
+      } else {
+        reject(err);
+      }
+    });
+    server.on("listening", () => {
+      const url = `http://localhost:${actualPort}`;
       console.log(`\n◆ haokan-design 设计资产库`);
       console.log(`  库目录: ${OUTPUT_ROOT}`);
+      if (actualPort !== port) console.log(`  端口 ${port} 被占用（可能是其它项目的 Vite preview），已自动改用 ${actualPort}`);
       console.log(`  画廊已启动: ${url}\n`);
       if (open && process.platform === "darwin" && !process.env.NO_OPEN) exec(`open ${url}`);
-      resolve({ server, url, port });
+      resolve({ server, url, port: actualPort });
     });
+    server.listen(actualPort);
   });
 }
 

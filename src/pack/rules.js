@@ -1,5 +1,6 @@
 // 生成"一键应用"到 AI 项目的集成文件：CSS 变量、Tailwind 配置、AI 规则文件。
 // 这些文件把设计资产变成可被编码工具消费的硬约束。
+import { layoutToProse } from "../extract/layout.js";
 
 function stripPrefix(key, prefix) {
   return key.startsWith(prefix) ? key.slice(prefix.length) : key;
@@ -115,6 +116,11 @@ function tokenQuickRef(tokens) {
     if (motion?.libraries?.length) L.push("- 动效库: " + motion.libraries.join(", "));
     if (motion?.hoverChanges?.length) L.push("- hover 变化: " + motion.hoverChanges.join(", "));
   }
+  const layout = tokens.$extensions?.["haokan.layout"];
+  if (layout) {
+    L.push("\n### 布局与构图（复刻来源站的结构，不要套用通用模板）");
+    L.push(layoutToProse(layout));
+  }
   return L.join("\n");
 }
 
@@ -124,7 +130,9 @@ export function toAIRules(tokens, profileMarkdown, meta) {
   const profile = profileMarkdown.replace(/```json[\s\S]*?```/g, "").trim();
   return `# 设计规范约束（由 haokan-design 从 ${meta.source} 提炼）
 
-> 本文件是本项目的设计语言约束。生成或修改任何 UI 时，**必须**遵守以下 token 与规范，**不得**自行发明颜色、字号、间距，**不得**产出"AI 味"的默认样感（居中英雄区 + 紫色渐变 + 滥用 emoji + 通用卡片阴影）。
+> 本文件是本项目的设计语言约束。生成或修改任何 UI 时，**必须**遵守以下 token、布局与规范，**不得**自行发明颜色、字号、间距，**不得**产出"AI 味"的默认样感（居中英雄区 + 紫色渐变 + 滥用 emoji + 通用卡片阴影）。
+>
+> **参考成品视觉**：本目录下 \`reference.png\` 是来源站首屏截图。请复刻它的**构图、视觉层级与气质**（版心、Hero 排布、留白、配图），而不是把 token 套进一个通用模板——布局本身才是"好看"的关键。
 
 ## Token 速查（唯一允许使用的取值）
 ${tokenQuickRef(tokens)}

@@ -1,7 +1,9 @@
 // 设计语言合成：把"确定性抽取"的结构化数据交给本地 LLM，
 // 让它做"解释与命名"——写出设计语言、原则、do/don't 和美学标签。
 // 严格约束：只解释给定数据，不臆造数值。这是防"AI 味"的关键一环。
+import fs from "node:fs";
 import { log } from "../util/log.js";
+import { layoutToProse } from "../extract/layout.js";
 
 // 把美学标签统一成去重的逗号分隔字符串。
 // 模型可能返回 "editorial"、"editorial, swiss" 或 ["editorial","minimal"]，
@@ -63,6 +65,12 @@ function digest(system, meta) {
     L.push("  - 未检测到明显动效，倾向静态/克制。");
   }
   L.push("");
+  if (system.layout) {
+    L.push("");
+    L.push("## 布局与构图（确定性抽取的结构指纹）");
+    L.push(layoutToProse(system.layout));
+  }
+  L.push("");
   const varNames = Object.keys(system.siteTokens.sample);
   if (varNames.length) {
     L.push(`## 站点自带 CSS 变量（共 ${system.siteTokens.count} 个，节选变量名以佐证设计意图）`);
@@ -85,22 +93,67 @@ const SYSTEM_PROMPT = `你是资深设计系统专家，专长是把优秀网页
 ## 色彩运用（说明各角色何时用、比例关系）
 ## 字体排印（层级、字重、可读性；若数据区分了"正文/UI 字体"与"展示/标题字体"，须分别说明各自用途——标题/hero 用展示字体，正文/控件用正文字体，不可混为一谈）
 ## 间距与布局（密度、留白节奏、栅格倾向）
+## 布局与构图（据"布局指纹"落地：版心宽度、Hero 构图（居中/左对齐/左右分栏）、整体对齐倾向、栅格列数、区块留白节奏、配图策略；给出"如何复刻这种构图"的具体要点，以及要避免的通用套路）
 ## 形状与质感（圆角/阴影/边框的取舍）
 ## 组件风格提示（按钮/卡片/输入框/导航如何落地）
 ## 动效与交互（基于给定的过渡时长/缓动/hover 变化/动效库，给出可落地的动效配方——如 hover 用多少 ms + 何种缓动、入场方式；并强调克制，避免无意义动画）
 ## Do / Don't（重点写防 AI 味的负向约束）`;
 
-export async function synthesizeProfile(llm, system, meta) {
-  const data = digest(system, meta);
-  const prompt = `以下是从目标网站确定性抽取并去噪后的设计测量数据，请据此产出设计语言规范：\n\n${data}`;
+// 视觉档附加指令：模型会同时收到真实页面截图
+const VISION_ADDENDUM = `
 
-  log.detail(`调用模型合成设计语言（model=${llm.cfg.defaultModel}）…`);
-  const text = await llm.complete(prompt, {
-    system: SYSTEM_PROMPT,
-    maxTokens: 4096,
-    temperature: 0.4,
-    timeoutMs: 180000,
-  });
+【本次附带了该网站的真实页面截图】请务必结合截图，如实刻画：
+- 真实的版式构图与视觉层级（什么最大、什么在上、如何分栏、如何留白）；
+- 让它"好看/高级"的关键设计决策与"签名动作"（例如超大标题、非对称排布、全出血图、克制的色彩点缀等）；
+- 把这些写进「布局与构图」一节，并在「Do / Don't」里给出复刻要点与要避免的平庸套路。
+数值（颜色/字号/间距等）仍以给定的测量数据为准，不要臆造；截图用于理解构图与气质。`;
+
+// 读取截图为 Anthropic image 内容块
+function readImageBlock(p) {
+  try {
+    const b = fs.readFileSync(p);
+    if (!b || !b.length) return null;
+    return { type: "image", source: { type: "base64", media_type: "image/png", data: b.toString("base64") } };
+  } catch {
+    return null;
+  }
+}
+
+export async function synthesizeProfile(llm, system, meta, opts = {}) {
+  const data = digest(system, meta);
+  const shots = (opts.screenshots || []).filter(Boolean);
+  const useVision = !!(opts.vision && shots.length);
+
+  let text;
+  if (useVision) {
+    // 视觉档：把真实截图连同测量数据一起喂给模型，产出"看图后"的构图/审美规范
+    const imgs = shots.slice(0, 2).map(readImageBlock).filter(Boolean);
+    const promptText =
+      `以下是从目标网站确定性抽取并去噪后的设计测量数据，并附上该网站的真实页面截图，` +
+      `请据此产出设计语言规范（务必结合截图刻画真实的布局构图、视觉层级与签名设计动作）：\n\n${data}`;
+    if (imgs.length) {
+      log.detail(`调用模型（视觉档，含 ${imgs.length} 张截图，model=${llm.cfg.defaultModel}）合成设计语言…`);
+      const r = await llm.chat({
+        system: SYSTEM_PROMPT + VISION_ADDENDUM,
+        messages: [{ role: "user", content: [...imgs, { type: "text", text: promptText }] }],
+        maxTokens: 4096,
+        temperature: 0.4,
+        timeoutMs: 220000,
+      });
+      text = r.text;
+    }
+  }
+  if (text == null) {
+    // 无视觉档（或读图失败）：仅用结构化数据 + 布局指纹
+    const prompt = `以下是从目标网站确定性抽取并去噪后的设计测量数据，请据此产出设计语言规范：\n\n${data}`;
+    log.detail(`调用模型（结构化档，model=${llm.cfg.defaultModel}）合成设计语言…`);
+    text = await llm.complete(prompt, {
+      system: SYSTEM_PROMPT,
+      maxTokens: 4096,
+      temperature: 0.4,
+      timeoutMs: 180000,
+    });
+  }
 
   if (!text) throw new Error("模型未返回内容");
 
@@ -122,5 +175,5 @@ export async function synthesizeProfile(llm, system, meta) {
     }
   }
 
-  return { markdown: text.trim(), tags, oneLiner, aesthetic };
+  return { markdown: text.trim(), tags, oneLiner, aesthetic, track: useVision ? "vision" : "structural" };
 }

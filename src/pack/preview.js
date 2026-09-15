@@ -1,5 +1,6 @@
 // 自包含 preview.html：不装 App、不解压也能双击浏览的"活体样式指南"。
 // 排版强调可读性：宽松行距、清晰的章节分隔与留白。
+import { demoSectionForPreview } from "./demo.js";
 
 function esc(s = "") {
   return String(s).replace(/[<>&]/g, (c) => ({ "<": "&lt;", ">": "&gt;", "&": "&amp;" }[c]));
@@ -143,9 +144,11 @@ function motionSection(motion, primary) {
   const hoverDur = hov.durations[0]?.ms || motion.durations[0]?.ms || 200;
   const hoverEase = hov.easings[0] || motion.easings[0]?.fn || "ease";
   const hoverList = hov.changes.length ? hov.changes.map((c) => `${c.label}`).join("、") : "—";
+  // 按主色亮度选可读的按钮文字色：浅色主色（如粉/黄）用深字，深色主色用白字
+  const primaryFg = isLight(primary) ? "#0b0b0f" : "#ffffff";
   const hoverDemo = `
     <div class="hover-demo">
-      <button class="demo-btn" style="--d:${hoverDur}ms;--e:${esc(hoverEase)};background:${primary}">悬停我试试</button>
+      <button class="demo-btn" style="--d:${hoverDur}ms;--e:${esc(hoverEase)};background:${primary};color:${primaryFg}">悬停我试试</button>
       <span class="muted">hover 改变：${esc(hoverList)}${hov.durations[0] ? `　·　${hoverDur}ms` : ""}　·　${esc(hoverEase)}</span>
     </div>`;
 
@@ -163,7 +166,7 @@ function motionSection(motion, primary) {
   </section>`;
 }
 
-export function buildPreviewHtml({ system, meta, profile, coverRel = "covers/cover.png" }) {
+export function buildPreviewHtml({ system, meta, profile, coverRel = "covers/cover.png", tokens = null }) {
   const primary = system.colors.palette.find((c) => c.role === "primary")?.hex || "#3b82f6";
   const bg = system.colors.mode === "dark" ? "#0e0f13" : "#ffffff";
   const fg = system.colors.mode === "dark" ? "#f5f6f8" : "#14161a";
@@ -260,6 +263,8 @@ export function buildPreviewHtml({ system, meta, profile, coverRel = "covers/cov
   </header>
 
   <div class="cover"><img src="${coverRel}" alt="cover"/></div>
+
+  ${tokens ? demoSectionForPreview({ tokens, source: meta.source }) : ""}
 
   <section>
     <h2>概览</h2>

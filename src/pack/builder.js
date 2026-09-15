@@ -27,7 +27,7 @@ function timestamp() {
  * @param {object} args
  *   system, tokens, profile, meta, coverPath, pages(处理结果数组), outputRoot
  */
-export function buildPack({ system, tokens, profile, meta, coverPath, pages, outputRoot }) {
+export function buildPack({ system, tokens, profile, meta, coverPath, pages, outputRoot, capabilities }) {
   const name = `${slug(meta.source)}-${timestamp()}-${Math.random().toString(36).slice(2, 4)}`;
   const dir = path.join(outputRoot, name);
   const coversDir = path.join(dir, "covers");
@@ -62,8 +62,8 @@ export function buildPack({ system, tokens, profile, meta, coverPath, pages, out
   fs.writeFileSync(path.join(rulesDir, "tailwind.config.js"), toTailwind(tokens));
   fs.writeFileSync(path.join(rulesDir, "ai-rules.md"), toAIRules(tokens, profile.markdown, meta));
 
-  // preview.html
-  const html = buildPreviewHtml({ system, meta, profile });
+  // preview.html（传入 tokens 以渲染"活体样张"section）
+  const html = buildPreviewHtml({ system, meta, profile, tokens });
   fs.writeFileSync(path.join(dir, "preview.html"), html);
 
   // manifest.json
@@ -82,6 +82,18 @@ export function buildPack({ system, tokens, profile, meta, coverPath, pages, out
     theme: system.colors.mode,
     density: system.density,
     primaryColor,
+    capabilities: capabilities || { vision: false, track: profile.track || "structural" },
+    layout: system.layout
+      ? {
+          heroType: system.layout.hero?.type,
+          containerWidth: system.layout.containerWidth,
+          gridColumns: system.layout.gridColumns,
+          alignment: system.layout.alignment,
+          imagery: system.layout.imagery,
+          rhythm: system.layout.rhythm,
+          summary: system.layout.summary,
+        }
+      : null,
     summary: {
       pagesAnalyzed: system.pagesAnalyzed,
       paletteSize: system.colors.palette.length,
