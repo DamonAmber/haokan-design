@@ -95,8 +95,10 @@ export function buildDerivedPack({ baseDir, baseName, tokens, composition = {}, 
   const profile = {
     markdown: profileMd,
     oneLiner: baseManifest.oneLiner || "",
+    oneLinerEn: baseManifest.oneLinerEn || "",
     aesthetic: baseManifest.aesthetic || "",
     tags: baseManifest.tags || [],
+    tagsEn: baseManifest.tagsEn || [],
   };
   const meta = { source, pages: (baseManifest.sourceUrls || []).map((u) => ({ url: u, title: "" })) };
 
@@ -126,7 +128,9 @@ export function buildDerivedPack({ baseDir, baseName, tokens, composition = {}, 
     generatorVersion: baseManifest.generatorVersion || "0.1.0",
     aesthetic: baseManifest.aesthetic || null,
     tags: baseManifest.tags || [],
+    tagsEn: baseManifest.tagsEn || [],
     oneLiner: baseManifest.oneLiner || "",
+    oneLinerEn: baseManifest.oneLinerEn || "",
     theme: system.colors.mode,
     density: system.density,
     primaryColor,

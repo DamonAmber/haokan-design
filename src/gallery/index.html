@@ -105,17 +105,30 @@
   /* 关闭时更干脆的收束 */
   .overlay.closing{transition:background .26s ease,backdrop-filter .26s ease,-webkit-backdrop-filter .26s ease,visibility .26s}
   .viewer{width:min(1120px,94vw);height:92vh;background:var(--glass-2);backdrop-filter:var(--blur);-webkit-backdrop-filter:var(--blur);border:1px solid var(--line);border-radius:var(--radius-lg);overflow:hidden;display:flex;flex-direction:column;box-shadow:var(--shadow-lg),var(--hair);
-    transform:translateY(28px) scale(.955);opacity:0;transform-origin:center 62%;will-change:transform,opacity;
-    transition:transform .48s cubic-bezier(.16,1,.3,1),opacity .34s ease,width .34s cubic-bezier(.2,.85,.25,1),height .34s cubic-bezier(.2,.85,.25,1)}
+    transform:translateY(28px) scale(.955);opacity:0;transform-origin:center 62%;
+    transition:transform .48s cubic-bezier(.16,1,.3,1),opacity .34s ease,width .42s cubic-bezier(.32,.72,0,1),height .42s cubic-bezier(.32,.72,0,1)}
   .overlay.show .viewer{transform:none;opacity:1}
   .overlay.closing .viewer{transition:transform .26s cubic-bezier(.45,0,.75,.25),opacity .2s ease}
+  /* 尺寸动画期间临时关闭自身背景模糊：backdrop-filter 会随尺寸逐帧重采样身后的模糊背景，
+     动画停下的一刻做最终重栅格化会带来亚像素抖动。运动中关闭（被运动掩盖，不可察觉），
+     结束后恢复（静止时只渲染一次、无位移）。静止状态的玻璃质感完全不变。 */
+  .viewer.resizing{backdrop-filter:none;-webkit-backdrop-filter:none}
   /* 样张 / 微调：给样张接近真实版心的宽度，别挤在小画面里 */
   .viewer.wide{width:min(1520px,97vw);height:95vh}
   .viewer-bar{display:flex;align-items:center;gap:8px;padding:12px 14px;border-bottom:1px solid var(--line);-webkit-app-region:no-drag}
   .viewer-bar .vt{font-weight:650;flex:1;min-width:0;color:var(--fg);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;margin-right:8px}
   /* color-scheme:dark 让空白/加载中的 iframe 画布呈深色而非纯白，杜绝弹出/关闭时的白闪；
      样张与规范页都会自设不透明背景，故不受影响 */
-  .viewer iframe{flex:1;width:100%;border:0;background:var(--panel);color-scheme:dark}
+  /* 详情主体：双缓冲舞台(规范/样张) 与 编辑器(微调) 两个叠层，用不透明度交叉淡入。
+     切换时窗体尺寸(.viewer.wide)与内容交叉淡入同帧进行，成为一次连续、自然的形变——
+     不再有"空盒子单独变尺寸"的割裂中段，也没有 iframe 重载的白屏。 */
+  .viewer-body{position:relative;flex:1;min-height:0}
+  .viewer-stage,.viewer-body .editor-wrap{position:absolute;inset:0;opacity:0;pointer-events:none;transition:opacity .42s cubic-bezier(.32,.72,0,1)}
+  .viewer-stage.show,.viewer-body .editor-wrap.show{opacity:1;pointer-events:auto}
+  .viewer-stage{overflow:hidden}
+  /* 舞台内 A/B 双缓冲：后台预载完成后交叉淡入，规范/样张切换无空白 */
+  .viewer-stage .vframe{position:absolute;inset:0;width:100%;height:100%;border:0;background:var(--panel);color-scheme:dark;opacity:0;transition:opacity .42s cubic-bezier(.4,0,.2,1)}
+  .viewer-stage .vframe.show{opacity:1}
   .icon-btn{height:34px;display:inline-flex;align-items:center;justify-content:center;gap:6px;border:1px solid var(--line);background:var(--fill);border-radius:10px;padding:0 13px;font-size:13px;font-weight:500;cursor:pointer;color:var(--fg);flex:none;white-space:nowrap;line-height:1;text-decoration:none;transition:.15s;-webkit-app-region:no-drag}
   .icon-btn:hover{background:var(--fill-2)}
   .icon-btn.accent{background:var(--accent);color:#fff;border-color:transparent;box-shadow:0 2px 12px rgba(10,132,255,.42)}
@@ -129,9 +142,9 @@
   .icon-btn.only.close:hover{background:var(--fill-2);color:var(--fg)}
 
   /* 通用弹窗 */
-  .modal{position:fixed;inset:0;z-index:60;display:flex;align-items:center;justify-content:center;padding:24px;background:rgba(6,7,10,.52);backdrop-filter:blur(10px) saturate(160%);-webkit-backdrop-filter:blur(10px) saturate(160%);opacity:0;visibility:hidden;pointer-events:none;transition:opacity .2s ease,visibility .2s}
-  .modal.show{opacity:1;visibility:visible;pointer-events:auto}
-  .dialog{display:flex;flex-direction:column;width:min(520px,94vw);max-height:min(86vh,880px);overflow:hidden;background:var(--glass-2);backdrop-filter:var(--blur);-webkit-backdrop-filter:var(--blur);border:1px solid var(--line);border-radius:var(--radius-lg);color:var(--fg);box-shadow:var(--shadow-lg),var(--hair);transform:translateY(12px) scale(.985);opacity:.5;transition:transform .28s cubic-bezier(.2,.85,.25,1),opacity .2s ease}
+  .modal{position:fixed;inset:0;z-index:60;display:flex;align-items:center;justify-content:center;padding:24px;background:rgba(6,7,10,0);backdrop-filter:blur(0px) saturate(140%);-webkit-backdrop-filter:blur(0px) saturate(140%);visibility:hidden;pointer-events:none;transition:background .26s ease,backdrop-filter .26s ease,-webkit-backdrop-filter .26s ease,visibility .26s}
+  .modal.show{background:rgba(6,7,10,.52);backdrop-filter:blur(10px) saturate(160%);-webkit-backdrop-filter:blur(10px) saturate(160%);visibility:visible;pointer-events:auto}
+  .dialog{display:flex;flex-direction:column;width:min(520px,94vw);max-height:min(86vh,880px);overflow:hidden;background:var(--glass-2);backdrop-filter:var(--blur);-webkit-backdrop-filter:var(--blur);border:1px solid var(--line);border-radius:var(--radius-lg);color:var(--fg);box-shadow:var(--shadow-lg),var(--hair);transform:translateY(16px) scale(.97);opacity:0;will-change:transform,opacity;transition:transform .34s cubic-bezier(.16,1,.3,1),opacity .24s ease}
   .modal.show .dialog{transform:none;opacity:1}
   .dialog.wide{width:min(1180px,96vw)}
   .dialog.md{width:min(600px,94vw)}
@@ -181,26 +194,56 @@
   .lbl{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px}
 
   /* —— 任务托盘 —— */
-  .tray{position:fixed;right:20px;bottom:20px;z-index:45;width:344px;display:flex;flex-direction:column;gap:12px;max-height:74vh;overflow:auto}
+  .tray{position:fixed;right:20px;bottom:20px;z-index:45;width:352px;display:flex;flex-direction:column;gap:12px;max-height:74vh;overflow:auto}
   .tray:empty{display:none}
-  .tray-item{background:var(--glass-2);backdrop-filter:var(--blur);-webkit-backdrop-filter:var(--blur);border:1px solid var(--line);border-radius:16px;padding:14px 16px;box-shadow:var(--shadow),var(--hair)}
-  .tray-top{display:flex;align-items:center;gap:8px}
-  .tray-src{font-weight:650;font-size:14px;color:var(--fg);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;cursor:pointer}
-  .tray-x{border:0;background:none;color:var(--muted);cursor:pointer;font-size:14px;padding:2px 6px;border-radius:6px}
-  .tray-x:hover{color:var(--fg);background:var(--fill)}
-  .tray-bar{height:6px;background:var(--fill);border-radius:99px;overflow:hidden;margin-top:10px}
-  .tray-fill{height:100%;background:var(--accent);border-radius:99px;transition:width .4s ease}
-  .tray-item.done .tray-fill{background:var(--green)}
-  .tray-item.error .tray-fill{background:var(--red)}
-  .tray-meta{display:flex;justify-content:space-between;gap:10px;font-size:12px;color:var(--muted);margin-top:8px}
-  .tray-meta .lab{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-  .tray-meta .mdl{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;white-space:nowrap;flex:none}
-  .tray-steps{margin-top:10px;padding-top:8px;border-top:1px solid var(--line);display:none}
-  .tray-item.expanded .tray-steps{display:block}
-  .tray-steps .steps{margin:0}
-  .tray-steps .step{padding:3px 0;gap:9px}
-  .tray-steps .stepdot{width:15px;height:15px}
-  .tray-steps .steptxt b{font-size:12.5px}
+  .tray-item{position:relative;overflow:hidden;background:var(--glass-2);backdrop-filter:var(--blur);-webkit-backdrop-filter:var(--blur);border:1px solid var(--line);border-radius:16px;padding:14px 16px;box-shadow:var(--shadow-lg),var(--hair)}
+  /* 顶部一条随状态变色的细高亮线，强化“卡片”质感 */
+  .tray-item::before{content:"";position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,var(--accent),transparent);opacity:.9}
+  .tray-item.done::before{background:linear-gradient(90deg,var(--green),transparent)}
+  .tray-item.error::before{background:linear-gradient(90deg,var(--red),transparent)}
+  .tray-item.queued::before{background:linear-gradient(90deg,var(--amber),transparent);opacity:.6}
+  /* 新任务入场（仅播放一次，由 JS 加/去 .enter 控制） */
+  @keyframes trayIn{from{opacity:0;transform:translateX(18px) scale(.97)}to{opacity:1;transform:none}}
+  .tray-item.enter{animation:trayIn .42s cubic-bezier(.2,.9,.3,1)}
+
+  .ti-head{display:flex;align-items:center;gap:9px}
+  .ti-ic{width:18px;height:18px;flex:none;display:flex;align-items:center;justify-content:center;color:var(--muted)}
+  .ti-ic svg{width:18px;height:18px}
+  .ti-ic .ti-spin{width:15px;height:15px;border-radius:50%;border:2px solid var(--line);border-top-color:var(--accent);animation:spin .7s linear infinite}
+  .ti-ic .ti-dot{width:9px;height:9px;border-radius:50%;background:var(--amber);animation:haloPulse 1.6s ease-in-out infinite}
+  .tray-item.done .ti-ic{color:var(--green)}
+  .tray-item.error .ti-ic{color:var(--red)}
+  .ti-src{font-weight:650;font-size:14px;color:var(--fg);flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;cursor:pointer}
+  .ti-badge{flex:none;font-size:11px;font-weight:600;border-radius:var(--pill);padding:2px 9px;border:1px solid var(--line);color:var(--muted)}
+  .tray-item.running .ti-badge{color:var(--accent);border-color:var(--ring);background:rgba(10,132,255,.12)}
+  .tray-item.done .ti-badge{color:var(--green);border-color:rgba(48,209,88,.4);background:rgba(48,209,88,.12)}
+  .tray-item.error .ti-badge{color:var(--red);border-color:rgba(255,69,58,.42);background:rgba(255,69,58,.12)}
+  .tray-item.queued .ti-badge{color:var(--amber);border-color:rgba(255,159,10,.42);background:rgba(255,159,10,.1)}
+  .ti-x{border:0;background:none;color:var(--fg3);cursor:pointer;font-size:13px;width:24px;height:24px;border-radius:7px;flex:none;display:flex;align-items:center;justify-content:center;transition:.15s}
+  .ti-x:hover{color:var(--fg);background:var(--fill-2)}
+
+  .ti-bar{height:7px;background:var(--fill);border-radius:99px;overflow:hidden;margin-top:12px;position:relative}
+  .ti-fill{height:100%;width:0;background:linear-gradient(90deg,var(--accent),var(--accent-press));border-radius:99px;transition:width .5s cubic-bezier(.4,0,.2,1)}
+  .tray-item.done .ti-fill{background:var(--green)}
+  .tray-item.error .ti-fill{background:var(--red)}
+  /* 运行中：进度条上流动的高光 */
+  .tray-item.running .ti-fill::after{content:"";position:absolute;inset:0;background:linear-gradient(90deg,transparent,rgba(255,255,255,.35),transparent);transform:translateX(-100%);animation:trayShimmer 1.5s ease-in-out infinite}
+  @keyframes trayShimmer{100%{transform:translateX(220%)}}
+
+  .ti-meta{display:flex;align-items:center;justify-content:space-between;gap:10px;font-size:12px;color:var(--muted);margin-top:9px}
+  .ti-lab{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
+  .ti-right{flex:none;font-variant-numeric:tabular-nums;color:var(--fg);font-weight:600}
+  .ti-right.mdl{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-weight:500;color:var(--muted);font-size:11px}
+  .tray-item.error .ti-lab{color:#ff6b61}
+
+  /* 展开的步骤：平滑折叠 */
+  .ti-steps{max-height:0;overflow:hidden;opacity:0;transition:max-height .4s cubic-bezier(.32,.72,0,1),opacity .3s ease,margin .4s,padding .4s;border-top:1px solid transparent}
+  .tray-item.expanded .ti-steps{max-height:280px;opacity:1;margin-top:11px;padding-top:10px;border-top-color:var(--line)}
+  .ti-steps .steps{margin:0}
+  .ti-steps .step{padding:3px 0;gap:9px}
+  .ti-steps .stepdot{width:15px;height:15px}
+  .ti-steps .steptxt b{font-size:12.5px}
+  @media (prefers-reduced-motion: reduce){ .tray-item.enter{animation:none} .tray-item.running .ti-fill::after{animation:none} .ti-ic .ti-dot{animation:none} }
 
   /* 应用到项目 · 引导式向导 */
   .apply-h{font-weight:650;font-size:14px;margin-bottom:10px;color:var(--fg)}
@@ -247,6 +290,65 @@
   .btn.ghost{background:transparent;border-color:transparent;color:var(--muted)}
   .btn.ghost:hover{background:var(--fill);color:var(--fg)}
 
+  /* 向导：分区块 + 底部操作条（贴合各弹窗统一的 dlg-foot 视感，给足留白与分隔） */
+  .wiz-sec{margin-top:18px}
+  .wiz-sec:first-child{margin-top:2px}
+  .wiz-sec>.lbl{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.07em;margin-bottom:9px;font-weight:600}
+  /* 操作条：满宽分隔线 + 充足上下留白，避免按钮贴弹窗底边 */
+  .wiz-actions{display:flex;align-items:center;gap:10px;justify-content:space-between;margin:22px -22px 0;padding:16px 22px 14px;border-top:1px solid var(--line)}
+  .wiz-actions.end{justify-content:flex-end}
+  /* 操作预览：每条一行卡片，路径/箭头/说明清晰分列 */
+  .op-list{display:flex;flex-direction:column;gap:8px}
+  .op-row{display:flex;align-items:baseline;gap:10px;font-size:12.5px;background:var(--fill);border:1px solid var(--line);border-radius:10px;padding:9px 12px}
+  .op-row code{background:rgba(0,0,0,.28);padding:2px 7px;border-radius:6px;color:var(--fg);word-break:break-all;font-size:12px}
+  .op-row .op-arrow{color:var(--fg3);flex:none}
+  .op-row .op-desc{color:var(--muted);flex:1;line-height:1.5}
+  .wiz-sec .checkline{margin:10px 0 0}
+  .wiz-assets{font-size:12px;color:var(--muted);margin-top:9px;line-height:1.6}
+
+  /* 弹窗尺寸动画期间关闭自身 backdrop 模糊：模糊层会随尺寸逐帧重采样身后背景，导致卡顿/闪烁；
+     运动中关闭（被运动掩盖，不可察觉），结束恢复。静止时玻璃质感完全不变。 */
+  .dialog.resizing{backdrop-filter:none !important;-webkit-backdrop-filter:none !important}
+
+  /* 向导步骤条：用 max-height/opacity 平滑折叠，替代 display:none 的硬跳（完成页/手动面板会隐藏它）。
+     可见态需给有限 max-height，否则 none→0 不产生过渡。 */
+  .wiz-steps{overflow:hidden;max-height:64px;transition:max-height .44s cubic-bezier(.32,.72,0,1),opacity .3s ease,margin .44s cubic-bezier(.32,.72,0,1)}
+  .wiz-steps.hide{max-height:0 !important;opacity:0;margin-top:0;margin-bottom:0}
+
+  /* 向导面板方向性滑动：过渡期内两面板绝对定位叠放、交叉滑动淡入淡出；
+     容器高度过渡，外层 .dialog 逐帧跟随内容自然形变（无需直接动 backdrop 元素）。 */
+  .wiz-panes{position:relative}
+  .wiz-panes.sliding{overflow:hidden;transition:height .46s cubic-bezier(.5,.02,.2,1)}
+  .wiz-panes.sliding>.wiz-pane{position:absolute;top:0;left:0;width:100%;margin:0}
+  /* 纯位移推拽（不做透明度交叉），避免叠层导致的文字残影 */
+  .wiz-pane.anim{transition:transform .46s cubic-bezier(.5,.02,.2,1);will-change:transform}
+
+  /* 步骤指示器动效：连接线随完成进度填充 + 激活圆点弹跳 */
+  .wiz-sep{position:relative;overflow:hidden}
+  .wiz-sep::after{content:"";position:absolute;inset:0;background:var(--green);border-radius:2px;transform:scaleX(0);transform-origin:left;transition:transform .46s cubic-bezier(.32,.72,0,1)}
+  .wiz-step.done + .wiz-sep::after{transform:scaleX(1)}
+  .wiz-step i{transition:background .3s,border-color .3s,color .3s}
+  @keyframes dotPop{0%{transform:scale(.55)}62%{transform:scale(1.2)}100%{transform:scale(1)}}
+  .wiz-step.active i{animation:dotPop .46s cubic-bezier(.34,1.5,.5,1)}
+
+  /* 进入面板：内容分层错落浮入（在不透明推入的面板内进行，不与另一面板重叠，无残影） */
+  @keyframes wizItemIn{from{opacity:0;transform:translateY(13px)}to{opacity:1;transform:none}}
+  .wiz-pane.enter>*{animation:wizItemIn .44s both cubic-bezier(.22,.9,.3,1)}
+  .wiz-pane.enter>*:nth-child(1){animation-delay:.05s}
+  .wiz-pane.enter>*:nth-child(2){animation-delay:.11s}
+  .wiz-pane.enter>*:nth-child(3){animation-delay:.17s}
+  .wiz-pane.enter>*:nth-child(4){animation-delay:.23s}
+  .wiz-pane.enter>*:nth-child(n+5){animation-delay:.29s}
+
+  @media (prefers-reduced-motion: reduce){
+    .wiz-steps{transition:none}
+    .wiz-panes.sliding{transition:none}
+    .wiz-pane.anim{transition:none}
+    .wiz-sep::after{transition:none}
+    .wiz-step.active i{animation:none}
+    .wiz-pane.enter>*{animation:none}
+  }
+
   /* 内置文件夹浏览器 */
   .fs-browser{border:1px solid var(--line);border-radius:12px;background:var(--fill);margin-top:10px;overflow:hidden}
   .fs-bar{display:flex;align-items:center;gap:9px;padding:9px 11px;border-bottom:1px solid var(--line)}
@@ -264,8 +366,10 @@
   .fs-foot{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:9px 11px;border-top:1px solid var(--line)}
   .fs-foot .hint{margin:0;flex:1;min-width:0}
 
-  /* 完成页 */
-  .done-check{width:56px;height:56px;border-radius:50%;background:rgba(48,209,88,.14);border:1px solid rgba(48,209,88,.4);color:var(--green);display:flex;align-items:center;justify-content:center;font-size:28px;font-weight:800;margin:8px auto 14px}
+  /* 完成页：成功光环（与模型详情状态环同一套语言） */
+  .done-check{position:relative;width:60px;height:60px;border-radius:50%;color:var(--green);display:flex;align-items:center;justify-content:center;margin:10px auto 16px}
+  .done-check::before{content:"";position:absolute;inset:0;border-radius:50%;background:radial-gradient(circle at 50% 42%, rgba(48,209,88,.30), rgba(48,209,88,.04) 70%);box-shadow:inset 0 0 0 1px rgba(48,209,88,.42),0 0 34px -6px rgba(48,209,88,.55);animation:haloPulse 3.4s ease-in-out infinite}
+  .done-check svg{width:28px;height:28px;position:relative;z-index:1}
   .done-title{text-align:center;margin:0 0 8px;font-size:17px;font-weight:680;color:var(--fg)}
   .done-next{background:var(--fill);border:1px solid var(--line);border-radius:12px;padding:13px 15px;font-size:12.5px;color:var(--muted);line-height:1.65;margin-top:14px}
   .done-next b{color:var(--fg)}
@@ -318,6 +422,64 @@
   .vbadge.unk{color:var(--amber);border-color:rgba(255,159,10,.42);background:rgba(255,159,10,.12)}
   .model-reply{font-size:12px;color:var(--muted);background:var(--fill);border:1px solid var(--line);border-radius:10px;padding:10px 12px;margin-top:6px;line-height:1.6;white-space:pre-wrap;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;max-height:130px;overflow:auto}
 
+  /* ===== 模型详情 · 高级呈现 ===== */
+  .mdl-hero{display:flex;align-items:center;gap:16px;padding:2px 0 18px;margin-bottom:16px;border-bottom:1px solid var(--line)}
+  .mdl-halo{position:relative;width:58px;height:58px;flex:none;border-radius:50%;display:flex;align-items:center;justify-content:center;color:var(--green)}
+  .mdl-halo svg{width:26px;height:26px;position:relative;z-index:1}
+  .mdl-halo::before{content:"";position:absolute;inset:0;border-radius:50%;background:radial-gradient(circle at 50% 42%, rgba(48,209,88,.30), rgba(48,209,88,.04) 70%);box-shadow:inset 0 0 0 1px rgba(48,209,88,.42),0 0 34px -6px rgba(48,209,88,.55);animation:haloPulse 3.4s ease-in-out infinite}
+  .mdl-halo.bad{color:var(--red)}
+  .mdl-halo.bad::before{background:radial-gradient(circle at 50% 42%, rgba(255,69,58,.30), rgba(255,69,58,.04) 70%);box-shadow:inset 0 0 0 1px rgba(255,69,58,.42),0 0 34px -6px rgba(255,69,58,.55)}
+  @keyframes haloPulse{0%,100%{transform:scale(1);opacity:1}50%{transform:scale(1.06);opacity:.82}}
+  .mdl-hero-txt{min-width:0;flex:1}
+  .mdl-name{font-size:21px;font-weight:750;letter-spacing:-.02em;color:var(--fg);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;line-height:1.2}
+  .mdl-meta{font-size:12.5px;color:var(--muted);margin-top:4px;line-height:1.5;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .mdl-meta b{color:var(--fg);font-weight:600}
+  .mdl-badges{display:flex;gap:8px;margin-top:11px;flex-wrap:wrap}
+  .mdl-chip{display:inline-flex;align-items:center;gap:6px;font-size:12px;color:var(--muted);background:var(--fill);border:1px solid var(--line);border-radius:var(--pill);padding:3px 11px}
+  .mdl-chip.accent{color:var(--accent);border-color:var(--ring);background:rgba(10,132,255,.12)}
+
+  .mdl-tiles{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px}
+  .mdl-tile{background:var(--fill);border:1px solid var(--line);border-radius:12px;padding:11px 13px;min-width:0}
+  .mdl-tile.wide{grid-column:1 / -1}
+  .mdl-tile.err{border-color:rgba(255,69,58,.35);background:rgba(255,69,58,.08)}
+  .mdl-tile.err .t-v{color:#ff6b61}
+  .mdl-tile .t-k{font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin-bottom:6px}
+  .mdl-tile .t-v{font-size:13px;color:var(--fg);word-break:break-all;font-variant-numeric:tabular-nums}
+  .mdl-tile .t-v.mono{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12px;color:var(--muted)}
+
+  .mdl-reply{margin-bottom:16px;font-size:12px;color:var(--muted);background:var(--fill);border:1px solid var(--line);border-left:2px solid var(--accent);border-radius:0 10px 10px 0;padding:11px 13px;line-height:1.6;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;max-height:120px;overflow:auto}
+  .mdl-reply .t-k{font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);font-family:-apple-system,sans-serif}
+
+  /* 能力档位清单 */
+  .mdl-cap{border:1px solid var(--line);border-radius:14px;overflow:hidden;background:linear-gradient(180deg,rgba(255,255,255,.03),transparent 120px)}
+  .mdl-cap-h{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:13px 15px;border-bottom:1px solid var(--line)}
+  .mdl-cap-h .ch-t{font-size:13px;font-weight:680;color:var(--fg)}
+  .tier-pill{font-size:11.5px;font-weight:600;border-radius:var(--pill);padding:3px 11px;border:1px solid var(--line);white-space:nowrap}
+  .tier-pill.full{color:var(--green);border-color:rgba(48,209,88,.42);background:rgba(48,209,88,.12)}
+  .tier-pill.lite{color:var(--amber);border-color:rgba(255,159,10,.42);background:rgba(255,159,10,.12)}
+  .tier-pill.unk{color:var(--amber);border-color:rgba(255,159,10,.42);background:rgba(255,159,10,.12)}
+  .mdl-cap-list{padding:6px}
+  .cap-item{display:flex;align-items:flex-start;gap:12px;padding:9px 10px;border-radius:10px}
+  .cap-item + .cap-item{border-top:1px solid rgba(255,255,255,.04)}
+  .cap-item .ci-ic{width:21px;height:21px;flex:none;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:800;margin-top:1px}
+  .cap-item.on .ci-ic{background:rgba(48,209,88,.16);color:var(--green);box-shadow:inset 0 0 0 1px rgba(48,209,88,.42)}
+  .cap-item.off .ci-ic{background:var(--fill-2);color:var(--fg3);box-shadow:inset 0 0 0 1px var(--line)}
+  .cap-item .ci-txt{font-size:13px;color:var(--fg);line-height:1.45}
+  .cap-item.off .ci-txt{color:var(--muted)}
+  .cap-item .ci-txt em{font-style:normal;color:var(--fg3);font-size:12px;display:block;margin-top:2px}
+  .mdl-note{font-size:12.5px;color:var(--muted);line-height:1.65;margin-top:14px;padding:12px 14px;border-radius:11px;background:var(--fill);border:1px solid var(--line)}
+  .mdl-note b{color:var(--fg);font-weight:600}
+  /* 能力档位逐项浮入（面板渲染即播放） */
+  @keyframes capIn{from{opacity:0;transform:translateY(9px)}to{opacity:1;transform:none}}
+  .mdl-cap-list .cap-item{animation:capIn .42s both cubic-bezier(.22,.9,.3,1)}
+  .mdl-cap-list .cap-item:nth-child(1){animation-delay:.04s}
+  .mdl-cap-list .cap-item:nth-child(2){animation-delay:.1s}
+  .mdl-cap-list .cap-item:nth-child(3){animation-delay:.16s}
+  .mdl-cap-list .cap-item:nth-child(4){animation-delay:.22s}
+  .mdl-cap-list .cap-item:nth-child(5){animation-delay:.28s}
+  .mdl-cap-list .cap-item:nth-child(6){animation-delay:.34s}
+  @media (prefers-reduced-motion: reduce){ .mdl-cap-list .cap-item{animation:none} .mdl-halo::before{animation:none} }
+
   /* 按资产的提炼模型徽章（这份资产是被哪个模型、是否视觉提炼的） */
   .asset-model{display:none;align-items:center;gap:7px;flex:none;font-size:12px;color:var(--muted);background:var(--fill);border:1px solid var(--line);border-radius:var(--pill);padding:4px 11px;-webkit-app-region:no-drag;white-space:nowrap;max-width:340px;overflow:hidden;text-overflow:ellipsis}
   .asset-model.show{display:inline-flex}
@@ -326,8 +488,9 @@
   .asset-model .dim{opacity:.7}
 
   /* 样张类别切换条（仅样张模式下显示） */
-  .demo-bar{display:none;align-items:center;gap:12px;padding:9px 14px;border-bottom:1px solid var(--line);background:var(--fill);-webkit-app-region:no-drag}
-  .demo-bar.show{display:flex}
+  /* 样张类别切换条：用 max-height/padding 平滑展开收起，避免出现/消失时的高度硬跳 */
+  .demo-bar{display:flex;align-items:center;gap:12px;padding:0 14px;max-height:0;overflow:hidden;opacity:0;border-bottom:1px solid transparent;background:var(--fill);-webkit-app-region:no-drag;transition:max-height .42s cubic-bezier(.32,.72,0,1),opacity .3s ease,padding .42s cubic-bezier(.32,.72,0,1),border-color .34s ease}
+  .demo-bar.show{max-height:64px;opacity:1;padding:9px 14px;border-bottom-color:var(--line)}
   .demo-bar .db-lead{font-size:12px;font-weight:650;color:var(--fg);flex:none}
   .demo-bar .db-note{font-size:11.5px;color:var(--muted);margin-left:auto;flex:none}
   @media(max-width:720px){.demo-bar .db-note{display:none}}
@@ -339,10 +502,10 @@
   .seg button.on{background:rgba(255,255,255,.92);color:#0b0b0f}
 
   /* 编辑器：左控制面板 + 右实时样张 */
-  .editor-wrap{flex:1;display:none;min-height:0}
-  .editor-wrap.show{display:flex}
+  /* 编辑器为详情主体内的叠层，始终 flex 布局，显隐由 .viewer-body .editor-wrap 的不透明度控制 */
+  .editor-wrap{display:flex;min-height:0}
   .editor-controls{width:326px;flex:none;overflow-y:auto;overflow-x:hidden;padding:20px 18px 34px;border-right:1px solid var(--line);background:linear-gradient(180deg,rgba(255,255,255,.03),transparent 260px)}
-  .editor-wrap iframe{flex:1;width:100%;border:0;background:#fff}
+  .editor-wrap iframe{flex:1;width:100%;border:0;background:var(--panel);color-scheme:dark;opacity:1;transition:opacity .34s cubic-bezier(.2,.7,.2,1)}
   .ed-sec{margin-bottom:20px;padding-bottom:20px;border-bottom:1px solid var(--line)}
   .ed-sec:last-child{border-bottom:0;padding-bottom:0;margin-bottom:0}
   .ed-title{font-size:11px;font-weight:700;letter-spacing:.09em;text-transform:uppercase;color:var(--muted);margin:0 0 15px}
@@ -397,22 +560,207 @@
   .cap-note b{color:var(--fg)}
 
   /* 模型设置表单 */
-  .cfg-field{display:flex;flex-direction:column;gap:7px;margin-bottom:14px}
-  .cfg-field label{font-size:13px;color:var(--muted)}
-  .cfg-field input{height:var(--btn-h);padding:0 13px;border:1px solid var(--line);border-radius:10px;background:var(--fill);color:var(--fg);font-size:14px}
-  .cfg-field input:focus{outline:none;background:var(--fill-2);border-color:transparent;box-shadow:0 0 0 4px var(--ring)}
-  .cfg-result{font-size:12.5px;line-height:1.6;margin-top:6px;border-radius:10px;padding:10px 12px;border:1px solid var(--line);background:var(--fill);display:none}
-  .cfg-result.show{display:block}
-  .cfg-result.ok{border-color:rgba(48,209,88,.3);background:rgba(48,209,88,.09)}
-  .cfg-result.bad{border-color:rgba(255,69,58,.36);background:rgba(255,69,58,.1)}
+  /* 引导条：小图标 chip + 说明，与模型详情同一套精致语言 */
+  .cfg-lead{display:flex;align-items:flex-start;gap:12px;padding:12px 14px;margin-bottom:18px;border-radius:12px;background:var(--fill);border:1px solid var(--line);font-size:12.5px;line-height:1.65;color:var(--muted)}
+  .cfg-lead b{color:var(--fg);font-weight:600}
+  .cfg-lead-ic{width:34px;height:34px;flex:none;border-radius:10px;display:flex;align-items:center;justify-content:center;color:var(--accent);background:rgba(10,132,255,.12);box-shadow:inset 0 0 0 1px var(--ring)}
+  .cfg-lead-ic svg{width:18px;height:18px}
+
+  .cfg-field{display:flex;flex-direction:column;gap:8px;margin-bottom:15px}
+  .cfg-field>label{font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:.05em;color:var(--muted)}
+  /* 玻璃输入框：前置图标 + 聚焦发光，与沉浸 URL pill 一致的手感 */
+  .cfg-input{display:flex;align-items:center;gap:10px;height:44px;padding:0 6px 0 13px;border:1px solid var(--line);border-radius:12px;background:var(--fill);transition:border-color .2s,box-shadow .25s cubic-bezier(.2,.8,.2,1),background .2s}
+  .cfg-input:focus-within{border-color:transparent;background:var(--fill-2);box-shadow:0 0 0 4px var(--ring)}
+  .cfg-input .ci-lead{width:17px;height:17px;flex:none;color:var(--fg3);transition:color .2s}
+  .cfg-input:focus-within .ci-lead{color:var(--accent)}
+  .cfg-input input{flex:1;min-width:0;height:100%;border:0;background:transparent;color:var(--fg);font:inherit;font-size:14px;outline:none}
+  .cfg-input input::placeholder{color:var(--fg3)}
+  .cfg-eye{width:34px;height:34px;flex:none;border:0;background:transparent;color:var(--fg3);cursor:pointer;border-radius:9px;display:flex;align-items:center;justify-content:center;transition:.15s}
+  .cfg-eye:hover{color:var(--fg);background:var(--fill-2)}
+  .cfg-eye svg{width:17px;height:17px}
+  .cfg-hint{font-size:11.5px;color:var(--fg3);line-height:1.5}
+  /* 玻璃文本域（多 URL 输入），与 cfg-input 同款聚焦发光 */
+  .cfg-textarea{width:100%;padding:11px 13px;border:1px solid var(--line);border-radius:12px;background:var(--fill);color:var(--fg);font:inherit;font-size:14px;line-height:1.6;resize:vertical;min-height:94px;transition:border-color .2s,box-shadow .25s cubic-bezier(.2,.8,.2,1),background .2s}
+  .cfg-textarea::placeholder{color:var(--fg3)}
+  .cfg-textarea:focus{outline:none;border-color:transparent;background:var(--fill-2);box-shadow:0 0 0 4px var(--ring)}
+  /* 复选行升级：玻璃小块 */
+  .cfg-check{display:flex;align-items:center;gap:9px;font-size:12.5px;color:var(--muted);padding:10px 13px;border:1px solid var(--line);border-radius:12px;background:var(--fill);cursor:pointer;transition:.15s}
+  .cfg-check:hover{background:var(--fill-2)}
+  .cfg-check input{accent-color:var(--accent);width:15px;height:15px;flex:none}
+
+  /* 结果面板：状态点 + 圆角玻璃块，呼应模型详情 */
+  .cfg-result{font-size:12.5px;line-height:1.7;margin-top:4px;border-radius:12px;padding:12px 14px;border:1px solid var(--line);background:var(--fill);display:none;position:relative}
+  .cfg-result.show{display:block;animation:paneFade .28s ease}
+  .cfg-result.ok{border-color:rgba(48,209,88,.32);background:rgba(48,209,88,.09)}
+  .cfg-result.bad{border-color:rgba(255,69,58,.38);background:rgba(255,69,58,.1)}
   .cfg-result .vb{font-weight:700}
+  .cfg-result b{color:var(--fg)}
+  /* 结果状态条：连通 / 视觉 / 档位 三枚状态 chip + 明细 */
+  .cfg-res-head{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+  .cfg-res-head + .cfg-res-body{margin-top:9px}
+  .cfg-stat{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:600;border-radius:var(--pill);padding:3px 11px;border:1px solid var(--line);color:var(--muted)}
+  .cfg-stat .cs-dot{width:7px;height:7px;border-radius:50%;background:var(--fg3);flex:none}
+  .cfg-stat.ok{color:var(--green);border-color:rgba(48,209,88,.4);background:rgba(48,209,88,.1)}
+  .cfg-stat.ok .cs-dot{background:var(--green)}
+  .cfg-stat.bad{color:var(--red);border-color:rgba(255,69,58,.42);background:rgba(255,69,58,.1)}
+  .cfg-stat.bad .cs-dot{background:var(--red)}
+  .cfg-stat.unk{color:var(--amber);border-color:rgba(255,159,10,.42);background:rgba(255,159,10,.1)}
+  .cfg-stat.unk .cs-dot{background:var(--amber)}
+  .cfg-saved{display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:700;color:var(--green);margin-right:2px}
+  .cfg-res-body{font-size:12px;color:var(--muted);line-height:1.6}
+  .cfg-res-body b{color:var(--fg)}
+  .cfg-reply{margin-top:6px;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:11.5px;color:var(--muted);max-height:80px;overflow:auto;line-height:1.55}
+  .cfg-err{margin-top:2px;color:#ff6b61;font-size:12.5px;line-height:1.6}
+
+  /* 带图标 + loading 的设置按钮 */
+  .cfg-btn svg{width:15px;height:15px;flex:none}
+  .btn-spin{width:14px;height:14px;flex:none;border-radius:50%;border:2px solid var(--line);border-top-color:var(--fg);animation:spin .7s linear infinite;display:inline-block}
+  .btn.primary .btn-spin{border-color:rgba(255,255,255,.4);border-top-color:#fff}
 
   /* 对比页样张并排 */
   .cmp-demos{display:flex;gap:14px;overflow:auto;padding-bottom:6px}
   .cmp-demo{flex:none;width:380px;border:1px solid var(--line);border-radius:14px;overflow:hidden;background:var(--panel)}
   .cmp-demo .cd-h{padding:9px 12px;font-size:13px;font-weight:650;color:var(--fg);border-bottom:1px solid var(--line);display:flex;align-items:center;gap:8px}
   .cmp-demo .cd-h .cdot{width:11px;height:11px;border-radius:4px;flex:none;border:1px solid rgba(255,255,255,.14)}
-  .cmp-demo iframe{width:100%;height:560px;border:0;background:#fff;display:block}
+  .cmp-demo iframe{width:100%;height:560px;border:0;background:#fff;display:block;opacity:1;transition:opacity .34s ease}
+  .cmp-demo iframe.loading{opacity:0}
+
+  /* ===== 统一动效：面板切换淡入 / 按压反馈 / 无障碍降级 ===== */
+  /* display:none→显示 时会重放 CSS 动画，用它给分步向导、对比视图等做柔和过渡，消除硬切换跳变 */
+  @keyframes paneIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+  @keyframes paneFade{from{opacity:0}to{opacity:1}}
+  /* 向导面板的入场/切换改由 JS 方向性滑动驱动（见 .wiz-panes），此处不再用 paneIn，避免与内联 transform 冲突 */
+  #cmpTokenView,#cmpDemos{animation:paneFade .28s ease}
+  .fs-browser{animation:paneIn .24s cubic-bezier(.2,.8,.2,1)}
+  .cfg-result.show,.model-reply{animation:paneFade .24s ease}
+
+  /* 可点击元素统一的轻微按压反馈，增强"实体感" */
+  .btn:active,.icon-btn:active:not(.is-disabled),.tbtn:active,.chip:active,.seg button:active,.tool-card:active,.fs-item:active,.fs-up:active,.fs-pick:active{transform:scale(.97)}
+  .btn,.icon-btn,.tbtn,.chip,.tool-card{transition:background .15s,border-color .15s,color .15s,box-shadow .15s,transform .12s cubic-bezier(.2,.7,.2,1)}
+  .card{transition:transform .24s cubic-bezier(.2,.7,.2,1),box-shadow .24s,border-color .2s}
+  .card:active{transform:translateY(-2px) scale(.994)}
+
+  /* textarea 与输入框统一外观（新增 URL 弹窗的多行输入原先未被样式覆盖） */
+  .field textarea{width:100%;padding:10px 13px;border:1px solid var(--line);border-radius:10px;background:var(--fill);color:var(--fg);font:inherit;font-size:14px;line-height:1.6;resize:vertical;min-height:96px;transition:background .15s,border-color .15s,box-shadow .15s}
+  .field textarea::placeholder{color:var(--fg3)}
+  .field textarea:focus{outline:none;background:var(--fill-2);border-color:transparent;box-shadow:0 0 0 4px var(--ring)}
+
+  /* 尊重系统"减弱动态效果"：关闭位移/缩放类动画，仅保留极短淡入淡出，避免眩晕 */
+  @media (prefers-reduced-motion: reduce){
+    *,*::before,*::after{animation-duration:.01ms !important;animation-iteration-count:1 !important;transition-duration:.12s !important;scroll-behavior:auto !important}
+    .card:hover{transform:none}
+    .seltoolbar{transition:none}
+    .btn:active,.icon-btn:active,.tbtn:active,.chip:active,.seg button:active,.tool-card:active,.card:active{transform:none}
+  }
+
+  /* ===== 视图切换 + 沉浸式 3D 卡片浏览 ===== */
+  .layout-seg{flex:none}
+  html.im-open,html.im-open body{overflow:hidden}
+
+  /* 沉浸容器：全屏深色玻璃背景，覆盖顶栏，z 低于详情浮层(50) */
+  .immersive{position:fixed;inset:0;z-index:30;display:none;overflow:hidden;opacity:0;transition:opacity .34s ease;background:
+    radial-gradient(82vw 60vw at 50% -14%, rgba(10,132,255,.20), transparent 60%),
+    radial-gradient(70vw 60vw at 110% 6%, rgba(191,90,242,.14), transparent 58%),
+    radial-gradient(80vw 72vw at 48% 122%, rgba(48,209,88,.09), transparent 62%),
+    #06070b}
+  .immersive.show{display:block;opacity:1}
+  html.is-electron .immersive{background:
+    radial-gradient(82vw 60vw at 50% -14%, rgba(10,132,255,.20), transparent 60%),
+    radial-gradient(70vw 60vw at 110% 6%, rgba(191,90,242,.14), transparent 58%),
+    radial-gradient(80vw 72vw at 48% 122%, rgba(48,209,88,.09), transparent 62%),
+    rgba(6,7,11,.74)}
+
+  /* 顶部浮动信息条 */
+  .im-bar{position:absolute;top:0;left:0;right:0;z-index:6;display:flex;align-items:center;gap:12px;padding:18px 22px;-webkit-app-region:drag;pointer-events:none}
+  html.is-electron .im-bar{padding-top:26px;padding-left:94px}
+  .im-bar>*{-webkit-app-region:no-drag;pointer-events:auto}
+  .im-brand{display:flex;align-items:center;gap:10px;font-weight:700;font-size:17px;color:var(--fg);letter-spacing:-.02em;flex:none}
+  .im-brand img{width:26px;height:26px;border-radius:8px;box-shadow:0 1px 4px rgba(0,0,0,.5)}
+  .im-spacer{flex:1}
+
+  /* URL 提炼 pill（沉浸主推动作）：聚焦发光、提交有情绪化动效 */
+  .im-extract{flex:1 1 auto;max-width:560px;display:flex;align-items:center;gap:9px;height:46px;padding:0 6px 0 16px;border-radius:var(--pill);background:var(--glass-2);border:1px solid var(--line);backdrop-filter:var(--blur);-webkit-backdrop-filter:var(--blur);box-shadow:var(--hair);transition:border-color .2s,box-shadow .28s cubic-bezier(.2,.8,.2,1),background .2s}
+  .im-extract:focus-within{border-color:transparent;background:var(--fill-2);box-shadow:0 0 0 4px var(--ring),0 16px 40px -16px rgba(10,132,255,.6)}
+  .im-extract .ix-ico{width:18px;height:18px;color:var(--muted);flex:none;display:block;transition:color .2s}
+  .im-extract:focus-within .ix-ico{color:var(--accent)}
+  .im-extract input{flex:1;min-width:0;height:100%;border:0;background:transparent;color:var(--fg);font:inherit;font-size:14px;outline:none}
+  .im-extract input::placeholder{color:var(--fg3)}
+  .im-extract .ix-go{height:36px;flex:none;display:inline-flex;align-items:center;gap:6px;padding:0 16px;border:0;border-radius:var(--pill);background:var(--accent);color:#fff;font-size:13px;font-weight:600;cursor:pointer;box-shadow:0 4px 14px rgba(10,132,255,.5);transition:background .15s,transform .12s cubic-bezier(.2,.7,.2,1),opacity .15s}
+  .im-extract .ix-go:hover{background:var(--accent-press)}
+  .im-extract .ix-go:active{transform:scale(.96)}
+  .im-extract .ix-go svg{width:15px;height:15px}
+  .im-extract .ix-go[disabled]{opacity:.55;cursor:default}
+  .im-extract.busy{border-color:transparent;box-shadow:0 0 0 4px var(--ring)}
+  .im-extract.ok{animation:imPulse .55s cubic-bezier(.2,.8,.2,1)}
+  .im-extract.err{animation:imShake .42s cubic-bezier(.36,.07,.19,.97)}
+  @keyframes imPulse{0%{transform:scale(1)}45%{transform:scale(1.015)}100%{transform:scale(1)}}
+  @keyframes imShake{10%,90%{transform:translateX(-2px)}20%,80%{transform:translateX(4px)}30%,50%,70%{transform:translateX(-7px)}40%,60%{transform:translateX(7px)}}
+
+  /* 精致模型徽章 */
+  .im-model{height:44px;display:inline-flex;align-items:center;gap:9px;padding:0 15px;border-radius:var(--pill);border:1px solid var(--line);background:var(--glass-2);backdrop-filter:var(--blur);-webkit-backdrop-filter:var(--blur);color:var(--fg);font-size:13px;font-weight:600;cursor:pointer;transition:.15s;box-shadow:var(--hair);max-width:270px;flex:none}
+  .im-model:hover{background:var(--fill-2);border-color:var(--line-strong)}
+  .im-model:active{transform:scale(.98)}
+  .im-model .mdot{width:8px;height:8px;flex:none}
+  .im-model .im-mname{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-variant-numeric:tabular-nums;max-width:150px}
+  .im-model .im-mvis{font-size:11px;font-weight:600;color:var(--muted);padding-left:10px;border-left:1px solid var(--line);flex:none;white-space:nowrap}
+  .im-model .im-mvis.on{color:var(--green)}
+
+  /* 图标按钮（切宫格 / 导入，导入弱化：同款但更收敛） */
+  .im-ic{width:44px;height:44px;display:inline-flex;align-items:center;justify-content:center;border-radius:var(--pill);border:1px solid var(--line);background:var(--glass-2);backdrop-filter:var(--blur);-webkit-backdrop-filter:var(--blur);color:var(--muted);cursor:pointer;transition:.15s;box-shadow:var(--hair);flex:none}
+  .im-ic:hover{background:var(--fill-2);color:var(--fg);border-color:var(--line-strong)}
+  .im-ic:active{transform:scale(.96)}
+  .im-ic svg{width:18px;height:18px}
+  .im-ic.subtle{opacity:.72}
+  .im-ic.subtle:hover{opacity:1}
+
+  /* 提炼提示 toast（提交后情绪反馈） */
+  .im-toast{position:absolute;top:78px;left:50%;z-index:7;display:flex;align-items:center;gap:9px;background:var(--glass-2);border:1px solid var(--line);border-radius:var(--pill);padding:10px 18px;font-size:13px;color:var(--fg);backdrop-filter:var(--blur);-webkit-backdrop-filter:var(--blur);box-shadow:var(--shadow-lg),var(--hair);opacity:0;pointer-events:none;transform:translate(-50%,-10px) scale(.96);transition:opacity .3s ease,transform .4s cubic-bezier(.2,.9,.3,1)}
+  .im-toast.show{opacity:1;transform:translate(-50%,0) scale(1)}
+  .im-toast .t-ico{width:16px;height:16px;color:var(--accent);flex:none}
+  .im-toast.good .t-ico{color:var(--green)}
+  .im-count{font-variant-numeric:tabular-nums;color:var(--fg);font-weight:600;flex:none}
+
+  /* 3D 舞台 */
+  .im-stage{position:absolute;inset:0;perspective:1900px;perspective-origin:50% 46%;touch-action:none;cursor:grab;user-select:none}
+  .im-stage.grabbing{cursor:grabbing}
+  .im-stage.empty{display:flex;align-items:center;justify-content:center}
+  .im-empty{color:var(--muted);text-align:center;font-size:13.5px;line-height:1.6}
+  .im-empty h2{color:var(--fg);font-weight:650;margin:0 0 6px;font-size:18px}
+
+  /* 卡片：绝对居中锚点，transform 全部由 JS 写入（含居中的 translate(-50%,-50%)）。卡片更大更聚焦。 */
+  .im-card{--iw:clamp(460px,52vw,760px);position:absolute;top:50%;left:50%;width:var(--iw);transform-style:preserve-3d;transform-origin:center center;will-change:transform,opacity;cursor:pointer}
+  .im-card .im-cover{width:100%;aspect-ratio:16/10;border-radius:18px;overflow:hidden;background:rgba(255,255,255,.05);border:1px solid var(--line-strong);box-shadow:0 50px 110px -30px rgba(0,0,0,.86),var(--hair)}
+  .im-card .im-cover img{width:100%;height:100%;object-fit:cover;object-position:top;display:block}
+  .im-card .im-cover.empty{display:flex;align-items:center;justify-content:center;color:var(--fg3);font-size:13px}
+  .im-card.center .im-cover{border-color:rgba(255,255,255,.32);box-shadow:0 64px 150px -34px rgba(0,0,0,.94),0 0 0 1px rgba(255,255,255,.08),var(--hair)}
+  /* 新提炼资产到达时的高亮脉冲（作用在 cover 的 box-shadow 上，不干扰 JS 写的 transform） */
+  @keyframes arriveGlow{0%{box-shadow:0 0 0 0 rgba(10,132,255,.55),0 64px 150px -34px rgba(0,0,0,.94)}100%{box-shadow:0 0 0 26px rgba(10,132,255,0),0 64px 150px -34px rgba(0,0,0,.94)}}
+  .im-card.arrived .im-cover{animation:arriveGlow 1.2s ease-out}
+
+  /* 卡片说明（opacity 由 JS 按到中心距离设置，仅中心卡片充分显现） */
+  .im-cap{margin-top:26px;text-align:center;opacity:0;max-width:var(--iw)}
+  .im-cap .ic-head{display:inline-flex;align-items:center;gap:10px;margin-bottom:9px}
+  .im-cap .ic-dot{width:12px;height:12px;border-radius:4px;flex:none;border:1px solid rgba(255,255,255,.16)}
+  .im-cap .ic-src{font-weight:700;font-size:21px;letter-spacing:-.01em;color:var(--fg)}
+  .im-cap .ic-one{color:var(--muted);font-size:14px;line-height:1.55;margin:0 auto 14px;max-width:480px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+  .im-cap .ic-tags{display:flex;gap:7px;flex-wrap:wrap;justify-content:center;margin-bottom:16px}
+  .im-cap .ic-tag{font-size:12px;color:var(--muted);background:var(--fill);border:1px solid var(--line);border-radius:7px;padding:3px 11px}
+  .im-cap .ic-open{display:inline-flex;align-items:center;gap:7px;height:40px;padding:0 22px;border-radius:var(--pill);background:var(--accent);color:#fff;border:0;font-size:14px;font-weight:600;cursor:pointer;box-shadow:0 6px 22px rgba(10,132,255,.46);transition:.15s}
+  .im-cap .ic-open:hover{background:var(--accent-press)}
+  .im-cap .ic-open:active{transform:scale(.97)}
+  .im-cap .ic-star{margin-left:8px;width:40px;height:40px;border-radius:var(--pill);border:1px solid var(--line);background:var(--glass-2);color:var(--fg);font-size:15px;cursor:pointer;transition:.15s;vertical-align:middle}
+  .im-cap .ic-star:hover{background:var(--fill-2)}
+  .im-cap .ic-star.on{color:#ffd60a;border-color:rgba(255,214,10,.4)}
+
+  /* 底部操作提示 */
+  .im-hint{position:absolute;left:50%;bottom:22px;transform:translateX(-50%);z-index:6;display:flex;align-items:center;gap:12px;font-size:12px;color:var(--muted);background:var(--glass-2);border:1px solid var(--line);border-radius:var(--pill);padding:8px 16px;backdrop-filter:var(--blur);-webkit-backdrop-filter:var(--blur);box-shadow:var(--shadow),var(--hair);white-space:nowrap}
+  .im-hint kbd{font-family:inherit;background:var(--fill);border:1px solid var(--line);border-radius:6px;padding:1px 7px;font-size:11px;color:var(--fg)}
+  .im-hint .sep{width:1px;height:14px;background:var(--line)}
+  @media(max-width:680px){.im-hint .opt{display:none}}
+
+  @media (prefers-reduced-motion: reduce){
+    .immersive{transition:opacity .12s !important}
+  }
 </style>
 </head>
 <body>
@@ -420,6 +768,14 @@
     <div class="topbar-inner">
       <div class="brand"><img src="/icon.svg" class="brandico" alt=""/>Haokan<span class="brandsub">设计资产库</span></div>
       <div class="search"><input id="q" type="search" placeholder="搜索名称 / 来源 / 标签 / 风格描述…"/></div>
+      <div class="seg layout-seg" id="layoutSeg" title="切换浏览方式">
+        <button data-layout="grid" class="on" title="宫格：高效浏览全部资产">宫格</button>
+        <button data-layout="immersive" title="沉浸：全屏 3D 滚动翻卡">沉浸</button>
+      </div>
+      <div class="seg layout-seg" id="langSeg" title="切换资产内容语言（一句话/标签/流派）">
+        <button data-lang="zh" class="on" title="标签与描述显示中文">中</button>
+        <button data-lang="en" title="标签与描述显示英文">EN</button>
+      </div>
       <button class="btn primary" id="addBtn">＋ 从 URL 提炼</button>
       <button class="btn" id="importBtn">导入</button>
       <button class="btn model-badge" id="modelBadge" title="当前模型与视觉能力"><span class="mdot" id="modelDot"></span><span id="modelBadgeText">模型…</span></button>
@@ -431,6 +787,30 @@
   <div id="emptyState" class="empty-state" style="display:none">
     <h2>资产库还是空的</h2>
     <p>点右上角「从 URL 提炼」抓取第一个好看的网页设计，或导入一个 .stylepack。</p>
+  </div>
+
+  <!-- 沉浸式 3D 卡片浏览（默认主界面：滚动/拖拽翻卡） -->
+  <div class="immersive" id="immersive" aria-hidden="true">
+    <div class="im-bar">
+      <div class="im-brand"><img src="/icon.svg" alt=""/>Haokan</div>
+      <form class="im-extract" id="imExtract" autocomplete="off">
+        <svg class="ix-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 17H7A5 5 0 0 1 7 7h2"/><path d="M15 7h2a5 5 0 0 1 0 10h-2"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
+        <input id="imUrl" type="text" spellcheck="false" placeholder="粘贴网址，把它的设计语言收进你的资产库…"/>
+        <button class="ix-go" id="imGoBtn" type="submit" title="开始提炼（Enter）">提炼<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="13 6 19 12 13 18"/></svg></button>
+      </form>
+      <div class="im-spacer"></div>
+      <button class="im-model" id="imModel" title="模型与视觉能力"><span class="mdot" id="imModelDot"></span><span class="im-mname" id="imModelName">模型…</span><span class="im-mvis" id="imModelVis"></span></button>
+      <button class="im-ic subtle" id="imImport" title="导入 .stylepack" aria-label="导入 .stylepack"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg></button>
+      <button class="im-ic" id="imGrid" title="宫格视图" aria-label="宫格视图"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg></button>
+    </div>
+    <div class="im-stage" id="imStage"></div>
+    <div class="im-toast" id="imToast"><svg class="t-ico" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l1.9 5.6L19.5 9l-5.6 1.4L12 16l-1.9-5.6L4.5 9l5.6-1.4z"/></svg><span id="imToastText"></span></div>
+    <div class="im-hint" id="imHint">
+      <span class="im-count" id="imCount">0 / 0</span><span class="sep"></span>
+      <span class="opt">滚动 / 拖拽翻卡</span><span class="sep opt"></span>
+      <span><kbd>←</kbd> <kbd>→</kbd></span><span class="sep"></span>
+      <span><kbd>↵</kbd> 详情</span>
+    </div>
   </div>
 
   <!-- 选择工具栏 -->
@@ -475,10 +855,16 @@
         </div>
         <span class="db-note">同一套设计资产 · 不同页面类别</span>
       </div>
-      <iframe id="viewerFrame" title="preview"></iframe>
-      <div class="editor-wrap" id="editorWrap">
-        <div class="editor-controls" id="editorControls"></div>
-        <iframe id="editorFrame" title="样张（实时）"></iframe>
+      <div class="viewer-body" id="viewerBody">
+        <!-- 双缓冲舞台：A/B 两个 iframe 交替，后台预载 + 就绪后交叉淡入，规范/样张切换无空白无重排 -->
+        <div class="viewer-stage show" id="viewerStage">
+          <iframe class="vframe show" id="viewerFrameA" title="preview"></iframe>
+          <iframe class="vframe" id="viewerFrameB" title="preview"></iframe>
+        </div>
+        <div class="editor-wrap" id="editorWrap">
+          <div class="editor-controls" id="editorControls"></div>
+          <iframe id="editorFrame" title="样张（实时）"></iframe>
+        </div>
       </div>
     </div>
   </div>
@@ -487,14 +873,28 @@
   <div class="modal" id="addModal">
     <div class="dialog">
       <div class="dlg-head">
-        <div class="dh-t"><h3>从 URL 提炼</h3><p class="dlg-sub">每行一个网址，可同时提炼多个（最多并发 3，其余自动排队）。后台进行，进度见右下角托盘。</p></div>
+        <div class="dh-t"><h3>从 URL 提炼</h3><p class="dlg-sub">批量把网页的设计语言收进你的资产库。</p></div>
         <button class="dlg-x" id="addCancel" aria-label="关闭"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
       </div>
       <div class="dlg-body">
-        <div class="field"><label>网址（每行一个）</label><textarea id="urlInput" rows="4" placeholder="https://linear.app&#10;https://stripe.com"></textarea></div>
-        <div class="field"><label>每个站点采样页数</label><input id="pagesInput" type="number" min="1" max="12" value="5" /></div>
+        <div class="cfg-lead">
+          <div class="cfg-lead-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 17H7A5 5 0 0 1 7 7h2"/><path d="M15 7h2a5 5 0 0 1 0 10h-2"/><line x1="8" y1="12" x2="16" y2="12"/></svg></div>
+          <div>每行一个网址，可同时提炼多个（最多并发 <b>3</b>，其余自动排队）。后台进行，进度见右下角卡片。</div>
+        </div>
+        <div class="cfg-field">
+          <label>网址（每行一个）</label>
+          <textarea id="urlInput" class="cfg-textarea" rows="4" spellcheck="false" placeholder="https://linear.app&#10;https://stripe.com"></textarea>
+        </div>
+        <div class="cfg-field">
+          <label>每个站点采样页数</label>
+          <div class="cfg-input">
+            <svg class="ci-lead" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg>
+            <input id="pagesInput" type="number" min="1" max="12" value="5">
+          </div>
+        </div>
+        <div class="cfg-result" id="addHint"></div>
       </div>
-      <div class="dlg-foot"><button class="btn primary" id="addStart">开始提炼</button></div>
+      <div class="dlg-foot"><button class="btn primary cfg-btn" id="addStart"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="13 6 19 12 13 18"/></svg>开始提炼</button></div>
     </div>
   </div>
 
@@ -505,14 +905,25 @@
   <div class="modal" id="importModal">
     <div class="dialog">
       <div class="dlg-head">
-        <div class="dh-t"><h3>导入 .stylepack</h3><p class="dlg-sub">选择或粘贴本地 .stylepack 路径，导入到资产库。</p></div>
+        <div class="dh-t"><h3>导入 .stylepack</h3><p class="dlg-sub">把一个已有的设计资产包加入你的库。</p></div>
         <button class="dlg-x" id="importCancel" aria-label="关闭"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
       </div>
       <div class="dlg-body">
-        <div class="field"><label>文件路径</label><div class="inline"><input id="importPath" type="text" placeholder="~/Downloads/xxx.stylepack" /><button class="btn" id="importBrowse" style="display:none">浏览…</button></div></div>
-        <div class="hint" id="importHint"></div>
+        <div class="cfg-lead">
+          <div class="cfg-lead-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg></div>
+          <div>粘贴本地 <b>.stylepack</b> 文件路径导入；也可以在首页直接<b>从 URL 提炼</b>，构建你的独家资产库。</div>
+        </div>
+        <div class="cfg-field">
+          <label>文件路径</label>
+          <div class="cfg-input">
+            <svg class="ci-lead" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 8v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8"/><rect x="1.5" y="3" width="21" height="5" rx="1"/><line x1="10" y1="12" x2="14" y2="12"/></svg>
+            <input id="importPath" type="text" spellcheck="false" placeholder="~/Downloads/xxx.stylepack">
+            <button class="cfg-eye" id="importBrowse" type="button" title="浏览…" aria-label="浏览文件" style="display:none"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg></button>
+          </div>
+        </div>
+        <div class="cfg-result" id="importResult"></div>
       </div>
-      <div class="dlg-foot"><button class="btn primary" id="importGo">导入</button></div>
+      <div class="dlg-foot"><button class="btn primary cfg-btn" id="importGo"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>导入</button></div>
     </div>
   </div>
 
@@ -520,26 +931,37 @@
   <div class="modal" id="lintModal">
     <div class="dialog">
       <div class="dlg-head">
-        <div class="dh-t"><h3>校验项目合规性</h3><p class="dlg-sub">用「<span id="lintPackName"></span>」的设计 token 检查项目代码是否守规矩（颜色 / 圆角 / 字体 + AI 味信号）。</p></div>
+        <div class="dh-t"><h3>校验项目合规性</h3><p class="dlg-sub">用「<span id="lintPackName"></span>」的设计 token 检查项目是否守规矩。</p></div>
         <button class="dlg-x" id="lintCancel" aria-label="关闭"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
       </div>
       <div class="dlg-body">
-      <div class="field"><label>项目路径（文件或目录）</label><div class="inline"><input id="lintPath" type="text" placeholder="~/code/my-app/src" /><button class="btn" id="lintBrowse">浏览…</button></div></div>
-      <div class="fs-browser" id="lintFs" style="display:none">
-        <div class="fs-bar">
-          <button class="fs-up" type="button">⬆ 上一级</button>
-          <span class="fs-cur" title=""></span>
+        <div class="cfg-lead">
+          <div class="cfg-lead-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l7 3v5c0 4.5-3 7.6-7 9-4-1.4-7-4.5-7-9V6l7-3z"/><polyline points="9 12 11.5 14.5 15.5 10"/></svg></div>
+          <div>检查项目里的颜色 / 圆角 / 字体是否命中该资产的 token，并给出「AI 味」信号与合规分。</div>
         </div>
-        <div class="fs-list"></div>
-        <div class="fs-foot">
-          <span class="hint fs-hint">点文件夹进入，或直接选当前目录</span>
-          <button class="btn primary fs-pick" type="button">选择此目录</button>
+        <div class="cfg-field">
+          <label>项目路径（文件或目录）</label>
+          <div class="cfg-input">
+            <svg class="ci-lead" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>
+            <input id="lintPath" type="text" spellcheck="false" placeholder="~/code/my-app/src">
+            <button class="cfg-eye" id="lintBrowse" type="button" title="浏览…" aria-label="浏览目录"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2H3z"/><path d="M3 9h18l-1.6 8.2A2 2 0 0 1 17.5 19h-11a2 2 0 0 1-2-1.8z"/></svg></button>
+          </div>
         </div>
+        <div class="fs-browser" id="lintFs" style="display:none">
+          <div class="fs-bar">
+            <button class="fs-up" type="button">⬆ 上一级</button>
+            <span class="fs-cur" title=""></span>
+          </div>
+          <div class="fs-list"></div>
+          <div class="fs-foot">
+            <span class="hint fs-hint">点文件夹进入，或直接选当前目录</span>
+            <button class="btn primary fs-pick" type="button">选择此目录</button>
+          </div>
+        </div>
+        <label class="cfg-check" for="lintSpacing"><input type="checkbox" id="lintSpacing"/>同时检查间距（更严格，可能有噪声）</label>
+        <div id="lintResult"></div>
       </div>
-      <div class="checkline"><input type="checkbox" id="lintSpacing"/><label for="lintSpacing">同时检查间距（更严格，可能有噪声）</label></div>
-      <div id="lintResult"></div>
-      </div>
-      <div class="dlg-foot"><button class="btn primary" id="lintRun">开始校验</button></div>
+      <div class="dlg-foot"><button class="btn primary cfg-btn" id="lintRun"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l7 3v5c0 4.5-3 7.6-7 9-4-1.4-7-4.5-7-9V6l7-3z"/><polyline points="9 12 11.5 14.5 15.5 10"/></svg>开始校验</button></div>
     </div>
   </div>
 
@@ -559,20 +981,30 @@
         <span class="wiz-step" data-s="3"><i>3</i>预览确认</span>
       </div>
 
+      <div class="wiz-panes" id="wizPanes">
       <!-- 步骤 1：选工具 -->
       <div class="wiz-pane" id="wizTool">
-        <p>你在用哪个 AI 编码工具？选好后我会自动写进它读取的规则文件，你不用记文件名，也不用手改配置。</p>
+        <div class="cfg-lead">
+          <div class="cfg-lead-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 6.3a4 4 0 0 0-5.4 5.4L3 18v3h3l6.3-6.3a4 4 0 0 0 5.4-5.4l-2.6 2.6-2-2 2.6-2.6z"/></svg></div>
+          <div>选好你在用的 AI 编码工具，我会自动写进它读取的规则文件——你不用记文件名，也不用手改配置。</div>
+        </div>
         <div class="tool-grid" id="toolGrid"></div>
-        <div class="row between" style="margin-top:16px">
+        <div class="wiz-actions">
           <button class="btn ghost" id="applyManualLink">更愿意自己粘贴？</button>
-          <button class="btn" id="applyClose">关闭</button>
         </div>
       </div>
 
       <!-- 步骤 2：选项目 -->
       <div class="wiz-pane" id="wizPath" style="display:none">
         <div class="tool-chosen" id="toolChosen"></div>
-        <div class="field"><label>你的项目根目录</label><div class="inline"><input id="applyPath" type="text" placeholder="~/code/my-app" /><button class="btn" id="applyBrowse">浏览…</button></div></div>
+        <div class="cfg-field">
+          <label>你的项目根目录</label>
+          <div class="cfg-input">
+            <svg class="ci-lead" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>
+            <input id="applyPath" type="text" spellcheck="false" placeholder="~/code/my-app">
+            <button class="cfg-eye" id="applyBrowse" type="button" title="浏览…" aria-label="浏览目录"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2H3z"/><path d="M3 9h18l-1.6 8.2A2 2 0 0 1 17.5 19h-11a2 2 0 0 1-2-1.8z"/></svg></button>
+          </div>
+        </div>
         <div class="fs-browser" id="applyFs" style="display:none">
           <div class="fs-bar">
             <button class="fs-up" type="button">⬆ 上一级</button>
@@ -586,7 +1018,7 @@
         </div>
         <div class="hint">填你要接入设计规范的项目根目录（一般是有 <code>package.json</code>/<code>.git</code> 的那层）。下一步会先做安全检查和预览，<b>确认后才真正写入</b>。</div>
         <div class="hint" id="applyPathHint"></div>
-        <div class="row between" style="margin-top:16px">
+        <div class="wiz-actions">
           <button class="btn" id="wizBack1">← 上一步</button>
           <button class="btn primary" id="wizToPreview">下一步：预览写入 →</button>
         </div>
@@ -594,15 +1026,21 @@
 
       <!-- 步骤 3：预览确认 -->
       <div class="wiz-pane" id="wizPreview" style="display:none">
-        <div class="lbl">安全检查</div>
-        <div class="guard-box" id="guardBox"></div>
-        <label class="checkline" id="applyGate" style="display:none"><input type="checkbox" id="applyGateCk"/> 我已确认上面的路径就是我要修改的项目目录</label>
-        <div class="lbl" style="margin-top:14px">将执行的操作</div>
-        <div class="hint" id="applyPreviewOps"></div>
-        <div class="lbl" style="margin:14px 0 6px">将插入 / 写入的内容</div>
-        <pre class="log show" id="applyPreviewBlock" style="max-height:230px;margin-top:0"></pre>
-        <div class="hint" id="applyPreviewAssets"></div>
-        <div class="row between" style="margin-top:16px">
+        <div class="wiz-sec">
+          <div class="lbl">安全检查</div>
+          <div class="guard-box" id="guardBox"></div>
+          <label class="checkline" id="applyGate" style="display:none"><input type="checkbox" id="applyGateCk"/> 我已确认上面的路径就是我要修改的项目目录</label>
+        </div>
+        <div class="wiz-sec">
+          <div class="lbl">将执行的操作</div>
+          <div class="op-list" id="applyPreviewOps"></div>
+        </div>
+        <div class="wiz-sec">
+          <div class="lbl">将插入 / 写入的内容</div>
+          <pre class="log show" id="applyPreviewBlock" style="max-height:220px;margin:0"></pre>
+          <div class="wiz-assets" id="applyPreviewAssets"></div>
+        </div>
+        <div class="wiz-actions">
           <button class="btn" id="wizBack2">← 返回</button>
           <button class="btn primary" id="applyPreviewConfirm">确认写入</button>
         </div>
@@ -610,16 +1048,19 @@
 
       <!-- 完成 -->
       <div class="wiz-pane" id="wizDone" style="display:none">
-        <div class="done-check">✓</div>
+        <div class="done-check"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></div>
         <div class="done-title">已写入项目</div>
         <div class="hint" id="applyDoneMsg" style="text-align:center"></div>
         <div class="done-next" id="applyDoneNext"></div>
-        <div class="row" style="margin-top:16px"><button class="btn primary" id="applyDoneClose">完成</button></div>
+        <div class="wiz-actions end"><button class="btn primary" id="applyDoneClose">完成</button></div>
       </div>
 
       <!-- 手动复制（回退方式） -->
       <div class="wiz-pane" id="wizManual" style="display:none">
-        <p>复制下面的内容，自己粘贴进 AI 工具的规则文件即可（不写入任何文件、最保守）。</p>
+        <div class="cfg-lead">
+          <div class="cfg-lead-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="8" y="4" width="12" height="14" rx="2"/><path d="M16 4V3a1 1 0 0 0-1-1H9a1 1 0 0 0-1 1v1"/><path d="M8 8H6a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h9a2 2 0 0 0 2-2v-2"/></svg></div>
+          <div>复制下面的内容，自己粘贴进 AI 工具的规则文件即可（不写入任何文件，最保守）。</div>
+        </div>
         <div class="copy-row">
           <button class="btn" data-copy="rules/ai-rules.md">复制 AI 规则</button>
           <button class="btn" data-copy="rules/css-variables.css">复制 CSS 变量</button>
@@ -627,11 +1068,12 @@
           <button class="btn" data-copy="tokens.json">复制 Tokens JSON</button>
         </div>
         <div class="hint" id="applyCopyHint"></div>
-        <div class="row between" style="margin-top:16px">
+        <div class="wiz-actions">
           <button class="btn" id="wizManualBack">← 返回引导</button>
           <button class="btn" id="applyManualClose">关闭</button>
         </div>
       </div>
+      </div><!-- /wiz-panes -->
       </div><!-- /dlg-body -->
     </div>
   </div>
@@ -673,19 +1115,42 @@
   <div class="modal" id="modelCfgModal">
     <div class="dialog">
       <div class="dlg-head">
-        <div class="dh-t"><h3>模型设置 · 本 App 专用</h3><p class="dlg-sub">为本 App 单独配置一个模型，<b>独立于 Claude Code</b>。填任意 Anthropic 兼容端点（官方 Anthropic、CC Switch 上游、兼容网关）。清除后回退默认。<b>想要视觉档，请配置具备视觉的模型。</b></p></div>
+        <div class="dh-t"><h3>模型设置 · 本 App 专用</h3><p class="dlg-sub">为本 App 单独配置模型，<b>独立于 Claude Code</b>。</p></div>
         <button class="dlg-x" id="cfgClose" aria-label="关闭"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
       </div>
       <div class="dlg-body">
-        <div class="cfg-field"><label>端点 baseURL</label><input id="cfgBase" type="text" placeholder="https://api.anthropic.com 或你的网关地址"></div>
-        <div class="cfg-field"><label>API Key</label><input id="cfgToken" type="password" placeholder="sk-…"></div>
-        <div class="cfg-field"><label>模型名</label><input id="cfgModel" type="text" placeholder="claude-… 或你的上游模型名"></div>
+        <div class="cfg-lead">
+          <div class="cfg-lead-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="4" y1="21" x2="4" y2="14"/><line x1="4" y1="10" x2="4" y2="3"/><line x1="12" y1="21" x2="12" y2="12"/><line x1="12" y1="8" x2="12" y2="3"/><line x1="20" y1="21" x2="20" y2="16"/><line x1="20" y1="12" x2="20" y2="3"/><line x1="1" y1="14" x2="7" y2="14"/><line x1="9" y1="8" x2="15" y2="8"/><line x1="17" y1="16" x2="23" y2="16"/></svg></div>
+          <div>支持任意 Anthropic 兼容端点（官方 · CC Switch 上游 · 兼容网关）。想要<b>视觉档</b>，请配置具备视觉的模型；清除后回退默认。</div>
+        </div>
+        <div class="cfg-field">
+          <label>端点 baseURL</label>
+          <div class="cfg-input">
+            <svg class="ci-lead" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><line x1="3" y1="12" x2="21" y2="12"/><path d="M12 3a15 15 0 0 1 0 18 15 15 0 0 1 0-18z"/></svg>
+            <input id="cfgBase" type="text" spellcheck="false" placeholder="https://api.anthropic.com 或你的网关地址">
+          </div>
+        </div>
+        <div class="cfg-field">
+          <label>API Key</label>
+          <div class="cfg-input">
+            <svg class="ci-lead" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="10" width="16" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg>
+            <input id="cfgToken" type="password" spellcheck="false" placeholder="sk-…">
+            <button class="cfg-eye" id="cfgEye" type="button" title="显示 / 隐藏" aria-label="显示或隐藏 Key"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></svg></button>
+          </div>
+        </div>
+        <div class="cfg-field">
+          <label>模型名</label>
+          <div class="cfg-input">
+            <svg class="ci-lead" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2 20 6.5v9L12 20l-8-4.5v-9L12 2z"/><path d="M4 6.5 12 11l8-4.5M12 11v9"/></svg>
+            <input id="cfgModel" type="text" spellcheck="false" placeholder="claude-… 或你的上游模型名">
+          </div>
+        </div>
         <div class="cfg-result" id="cfgResult"></div>
       </div>
       <div class="dlg-foot">
-        <button class="btn spread" id="cfgTest">测试连接与视觉</button>
-        <button class="btn ghost" id="cfgClear">清除</button>
-        <button class="btn primary" id="cfgSave">保存</button>
+        <button class="btn spread cfg-btn" id="cfgTest"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>测试连接与视觉</button>
+        <button class="btn ghost cfg-btn" id="cfgClear"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16"/><path d="M6 7l1 13a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1l1-13"/><path d="M10 11v6M14 11v6"/><path d="M9 7V4h6v3"/></svg>清除</button>
+        <button class="btn primary cfg-btn" id="cfgSave"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>保存</button>
       </div>
     </div>
   </div>
@@ -696,6 +1161,9 @@ let LIBRARY = [];
 let activeAesthetic = "";
 let showFav = false;
 let currentPack = null;
+let layoutMode = (localStorage.getItem("haokan_layout")==="grid") ? "grid" : "immersive";  // 记住上次视图，默认沉浸
+let _libLoaded = false;         // 资产库是否已首次载入（用于沉浸载入态）
+let lang = (localStorage.getItem("haokan_lang")==="en") ? "en" : "zh";  // 内容展示语言（界面文案恒为中文；仅切换资产内容 zh/en）
 const selected = new Set();
 const NATIVE = window.haokanNative || null;
 if(NATIVE) document.documentElement.classList.add("is-electron");
@@ -707,11 +1175,41 @@ function aesList(a){
   const parts = (Array.isArray(a) ? a : String(a||"").split(",")).map(s=>String(s).trim()).filter(Boolean);
   return [...new Set(parts)];
 }
+// 美学流派英文关键词 → 中文展示名。aesthetic 在数据层保持英文（稳定、可分组、可作为语言无关的 id），
+// 仅在展示时中文化：兼容已有资产、无需重新提炼；未收录的值回退原文。
+const AES_ZH = {
+  "minimal":"极简","minimalism":"极简","minimalist":"极简",
+  "editorial":"编辑设计","magazine":"杂志感","archive":"档案","typographic":"字体主导",
+  "brutalist":"粗野主义","brutalism":"粗野主义",
+  "swiss":"瑞士国际主义","swiss international style":"瑞士国际主义","swiss international style (dark variant)":"瑞士国际主义（深色）","swiss style":"瑞士国际主义",
+  "glassmorphic":"玻璃拟态","glassmorphism":"玻璃拟态","neumorphic":"新拟物","neumorphism":"新拟物","skeuomorphic":"拟物","flat":"扁平","material":"材质设计",
+  "retro":"复古","vintage":"复古","modern":"现代","contemporary":"当代","futuristic":"未来感","industrial":"工业风",
+  "corporate":"商务","professional":"专业","playful":"活泼","elegant":"优雅","luxury":"奢华","premium":"高级",
+  "technical":"技术感","precision-driven":"精准驱动","precision":"精准","geometric":"几何","organic":"有机",
+  "maximal":"繁复","maximalist":"繁复","monochrome":"单色","monochromatic":"单色","dark":"深色","light":"浅色",
+  "gradient":"渐变","bold":"大胆","clean":"干净","grid":"网格","grid-based":"网格","dashboard":"控制台风",
+};
+function zhAes(k){ const s=String(k||"").trim(); return AES_ZH[s.toLowerCase()] || s; }
+function aesListZh(a){ return aesList(a).map(zhAes); }
+// 英文展示：aesthetic 本就是英文 key，词首大写即可（swiss→Swiss，precision-driven→Precision-Driven）
+function enAes(k){ return String(k||"").trim().replace(/\b[a-z]/g, c=>c.toUpperCase()); }
+function aesLabel(k){ return lang==="en" ? enAes(k) : zhAes(k); }
+function aesListLabel(a){ return aesList(a).map(aesLabel); }
+// 按当前语言取内容；缺失该语言时回退另一语言，再回退 aesthetic 标签
+function curOneLiner(p){
+  const zh=p.oneLiner||"", en=p.oneLinerEn||"";
+  return (lang==="en" ? (en||zh) : (zh||en)) || aesListLabel(p.aesthetic).join(", ");
+}
+function curTags(p){
+  const zh=p.tags||[], en=p.tagsEn||[];
+  return lang==="en" ? (en.length?en:zh) : (zh.length?zh:en);
+}
 
 async function load(){
   const r = await fetch("/api/library");
   const j = await r.json();
   LIBRARY = j.packs || [];
+  _libLoaded = true;
   for(const n of [...selected]) if(!LIBRARY.find(p=>p.name===n)) selected.delete(n);
   renderFilters(); render(); renderSel();
 }
@@ -724,7 +1222,7 @@ function renderFilters(){
   const chips = [`<span class="chip ${activeAesthetic===""&&!showFav?"active":""}" data-a="">全部</span>`];
   chips.push(`<span class="chip ${showFav?"active":""}" data-fav="1">★ 收藏 · ${favN}</span>`);
   for(const [a,n] of [...set.entries()].sort((x,y)=>y[1]-x[1])){
-    chips.push(`<span class="chip ${activeAesthetic===a?"active":""}" data-a="${esc(a)}">${esc(a)} · ${n}</span>`);
+    chips.push(`<span class="chip ${activeAesthetic===a?"active":""}" data-a="${esc(a)}" title="${esc(a)}">${esc(aesLabel(a))} · ${n}</span>`);
   }
   box.innerHTML = chips.join("") + `<span class="count" id="count"></span>`;
   box.querySelectorAll(".chip").forEach(c=>c.onclick=()=>{
@@ -740,7 +1238,7 @@ function visible(){
     if(showFav && !p.favorite) return false;
     if(activeAesthetic && !aesList(p.aesthetic).includes(activeAesthetic)) return false;
     if(!q) return true;
-    return [p.source,p.oneLiner,aesList(p.aesthetic).join(" "),(p.tags||[]).join(" ")].join(" ").toLowerCase().includes(q);
+    return [p.source,p.oneLiner,p.oneLinerEn,aesList(p.aesthetic).join(" "),aesListZh(p.aesthetic).join(" "),(p.tags||[]).join(" "),(p.tagsEn||[]).join(" ")].join(" ").toLowerCase().includes(q);
   });
 }
 
@@ -756,11 +1254,13 @@ function render(){
     el.querySelector(".checkbox").onclick = (e)=>{ e.stopPropagation(); toggleSelect(name); };
     el.querySelector(".star").onclick = (e)=>{ e.stopPropagation(); toggleFav(name); };
   });
+  // 沉浸模式打开时，随筛选/搜索/收藏变化同步重建 3D 卡片
+  if(layoutMode==="immersive") imSync();
 }
 
 function cardHtml(p){
   const cover = p.cover ? `<div class="cover"><img loading="lazy" src="${p.cover}" alt=""></div>` : `<div class="cover empty">无封面</div>`;
-  const tags = (p.tags||[]).slice(0,4).map(t=>`<span class="tag">${esc(t)}</span>`).join("");
+  const tags = curTags(p).slice(0,4).map(t=>`<span class="tag">${esc(t)}</span>`).join("");
   const sel = selected.has(p.name);
   return `<div class="card ${sel?"selected":""}" data-name="${esc(p.name)}">
     <div class="card-ov">
@@ -770,7 +1270,7 @@ function cardHtml(p){
     ${cover}
     <div class="card-body">
       <div class="card-head"><span class="cdot" style="background:${esc(p.primaryColor)}"></span><span class="csource">${esc(p.source)}</span></div>
-      <div class="oneliner">${esc(p.oneLiner||aesList(p.aesthetic).join(", "))}</div>
+      <div class="oneliner">${esc(curOneLiner(p))}</div>
       <div class="tags">${tags}</div>
     </div>
   </div>`;
@@ -887,17 +1387,19 @@ function closeDetail(){
   ov.classList.remove("show");
   // 关键：等淡出动画结束后再清空 iframe，避免关闭瞬间 iframe 变 about:blank 露出白屏；
   // 宽度/样张切换条等也在隐藏后再复位，避免关闭过程中的尺寸跳动。
+  _viewSeq++; // 作废任何进行中的视图切换回调，避免关闭后仍在操作 iframe
   if(_closeTimer) clearTimeout(_closeTimer);
   _closeTimer = setTimeout(()=>{
     ov.classList.remove("closing");
-    $("#viewerFrame").src="about:blank";
+    VF.reset();                                   // 清空双缓冲、复位前台
     $("#editorFrame").src="about:blank";
+    $("#viewerStage").classList.add("show");      // 下次打开默认显示舞台
     $("#editorWrap").classList.remove("show");
-    $("#viewerFrame").style.display="";
-    const v=document.querySelector(".viewer"); if(v) v.classList.remove("wide");
+    const v=document.querySelector(".viewer"); if(v) v.classList.remove("wide","resizing");
     $("#demoBar").classList.remove("show");
     _closeTimer = null;
   }, 300);
+  if(_resizeTimer){ clearTimeout(_resizeTimer); _resizeTimer=null; }
 }
 $("#closeViewer").onclick = closeDetail;
 
@@ -910,37 +1412,91 @@ $("#variantSeg").querySelectorAll("button").forEach(b=>{
     demoVariant = b.dataset.variant;
     $("#variantSeg").querySelectorAll("button").forEach(x=>x.classList.toggle("on", x===b));
     if(currentPack && viewMode==="demo"){
-      $("#viewerFrame").src = "/packs/"+encodeURIComponent(currentPack.name)+"/demo.html?variant="+encodeURIComponent(demoVariant);
+      const seq=++_viewSeq;
+      VF.load(demoUrlFor()).then((back)=>{ if(seq!==_viewSeq) return; requestAnimationFrame(()=>VF.swap(back)); });
     }
   };
 });
+let _viewSeq = 0; // 快速连点的序号守卫，丢弃过期切换
+let _resizeTimer = null; // 尺寸动画期间 .resizing 的恢复定时器
+
+function demoUrlFor(){
+  return "/packs/"+encodeURIComponent(currentPack.name)+"/demo.html?variant="+encodeURIComponent(demoVariant);
+}
+// 规范页 preview.html 内嵌了一份样张，画廊已有独立「样张」标签，载入后隐藏它避免重复（兼容老资产）。
+// 在交叉淡入之前、内容尚不可见时执行，杜绝"先显示再隐藏"的二次跳动。
+function hideEmbeddedSample(frame){
+  try{
+    const d=frame.contentDocument; if(!d) return;
+    let s=d.getElementById("hk-sample");
+    if(!s){ const df=d.querySelector(".demo-frame"); s=df?df.closest("section"):null; }
+    if(s) s.style.display="none";
+  }catch(_){}
+}
+
+// —— 双缓冲舞台控制器 ——
+// A/B 两个 iframe 轮流做「前台/后台」：新页面在后台静默加载，加载完成后与前台交叉淡入。
+// 关键收益：整个换页过程中前台旧内容始终可见，直到新内容就绪才切换——无空白、无白屏。
+const VF = {
+  a:null, b:null, front:null,
+  init(){ this.a=$("#viewerFrameA"); this.b=$("#viewerFrameB"); this.front=this.a; this.a.classList.add("show"); this.b.classList.remove("show"); },
+  back(){ return this.front===this.a ? this.b : this.a; },
+  // 后台加载 src；onReady 在淡入前触发（可对新文档做整理，如隐藏内嵌样张）。返回 Promise<后台frame>
+  load(src, onReady){
+    return new Promise((resolve)=>{
+      const back=this.back(); let settled=false;
+      const done=()=>{ if(settled) return; settled=true; back.removeEventListener("load", done);
+        if(onReady){ try{ onReady(back); }catch(_){} } resolve(back); };
+      back.addEventListener("load", done);
+      back.src=src; // 同 URL 重新赋值也会触发 load
+    });
+  },
+  // 交叉淡入：后台升为前台（配合 CSS opacity 过渡）
+  swap(back){ back.classList.add("show"); if(this.front && this.front!==back) this.front.classList.remove("show"); this.front=back; },
+  reset(){ try{ this.a.src="about:blank"; this.b.src="about:blank"; }catch(_){}
+    this.a.classList.add("show"); this.b.classList.remove("show"); this.front=this.a; }
+};
+
+// 视图切换：让「窗体尺寸渐变」与「内容交叉淡入」同帧启动，成为一次连续自然的形变。
 function setViewMode(mode){
   if(!currentPack) return;
   viewMode = mode;
   $("#viewSeg").querySelectorAll("button").forEach(b=>b.classList.toggle("on", b.dataset.mode===mode));
-  // 样张/微调需要更宽的画面来贴近真实版心；规范保持常规宽度
-  const viewerEl = document.querySelector(".viewer");
-  if(viewerEl) viewerEl.classList.toggle("wide", mode==="demo" || mode==="edit");
-  // 样张类别切换条仅在样张模式显示
+  // 样张类别切换条仅在样张模式显示（自身用 max-height 平滑展开/收起）
   $("#demoBar").classList.toggle("show", mode==="demo");
-  const frame=$("#viewerFrame"), ed=$("#editorWrap");
+
+  const seq = ++_viewSeq;
+  const wide = (mode==="demo" || mode==="edit");   // 样张/微调用更宽版心，规范常规宽度
+  const viewerEl = document.querySelector(".viewer");
+  const stage = $("#viewerStage"), ed = $("#editorWrap");
+  const willResize = !!viewerEl && (viewerEl.classList.contains("wide") !== wide);
+  // 同帧提交：尺寸 + 两个叠层的交叉淡入一起过渡
+  const commit = (afterBack)=>{
+    if(seq!==_viewSeq) return;
+    requestAnimationFrame(()=>{
+      if(seq!==_viewSeq) return;
+      // 尺寸真正变化时，动画期间临时关闭 viewer 自身背景模糊，规避收尾重栅格化抖动
+      if(willResize && viewerEl){
+        viewerEl.classList.add("resizing");
+        if(_resizeTimer) clearTimeout(_resizeTimer);
+        _resizeTimer = setTimeout(()=>{ viewerEl.classList.remove("resizing"); _resizeTimer=null; }, 520); // 略长于 .42s 尺寸过渡
+      }
+      if(viewerEl) viewerEl.classList.toggle("wide", wide);
+      if(afterBack) afterBack();
+    });
+  };
+
   if(mode==="edit"){
-    frame.style.display="none"; ed.classList.add("show");
-    enterEditor();
-  } else if(mode==="demo"){
-    ed.classList.remove("show"); frame.style.display="";
-    frame.onload=null;
-    frame.src = "/packs/"+encodeURIComponent(currentPack.name)+"/demo.html?variant="+encodeURIComponent(demoVariant);
-  } else { // 规范：画廊已有独立「样张」标签，载入后隐藏 preview.html 里内嵌的样张，避免重复（兼容老资产）
-    ed.classList.remove("show"); frame.style.display="";
-    frame.onload=()=>{ try{
-      const d=frame.contentDocument; if(!d) return;
-      let s=d.getElementById("hk-sample");
-      if(!s){ const df=d.querySelector(".demo-frame"); s=df?df.closest("section"):null; } // 兼容未带 id 的旧 preview.html
-      if(s) s.style.display="none";
-    }catch(_){} };
-    frame.src = currentPack.preview;
+    // 先在后台把编辑器 iframe 加载好，就绪后再与舞台交叉淡入（编辑器整体一次浮现，无空白）
+    enterEditor(()=> commit(()=>{ ed.classList.add("show"); stage.classList.remove("show"); }));
+    return;
   }
+
+  const src = (mode==="demo") ? demoUrlFor() : currentPack.preview;
+  const onReady = (mode==="spec") ? hideEmbeddedSample : null;
+  VF.load(src, onReady).then((back)=>{
+    commit(()=>{ VF.swap(back); stage.classList.add("show"); ed.classList.remove("show"); });
+  });
 }
 $("#viewSeg").querySelectorAll("button").forEach(b=>b.onclick=()=>setViewMode(b.dataset.mode));
 
@@ -972,7 +1528,7 @@ function edVal(o){ return (o&&o.$value!=null)?o.$value:null; }
 function cloneT(o){ return JSON.parse(JSON.stringify(o)); }
 function metaOf(t){ t.$extensions=t.$extensions||{}; t.$extensions["haokan.meta"]=t.$extensions["haokan.meta"]||{}; return t.$extensions["haokan.meta"]; }
 
-async function enterEditor(){
+async function enterEditor(onReady){
   const pack=currentPack;
   $("#editorControls").innerHTML = `<div class="hint">加载 tokens…</div>`;
   let base;
@@ -982,7 +1538,12 @@ async function enterEditor(){
   edBaseTokens=base; edOverrides={}; edLayerSrc={}; edWorking=null;
   buildEditorControls();
   const frame=$("#editorFrame");
-  frame.onload=()=>applyEditor();
+  const onEd=()=>{
+    frame.removeEventListener("load", onEd);
+    applyEditor();
+    if(onReady) onReady(); // 编辑器内容就绪，由调用方触发 stage→editor 交叉淡入
+  };
+  frame.addEventListener("load", onEd);
   frame.src="/packs/"+encodeURIComponent(pack.name)+"/demo.html?bare=1";
 }
 
@@ -1178,17 +1739,21 @@ const ADD_STEPS = [
   {id:"synthesize", name:"提炼设计语言"},
   {id:"pack", name:"打包 .stylepack"},
 ];
-$("#addBtn").onclick = ()=>{ $("#urlInput").value=""; addModal.classList.add("show"); setTimeout(()=>$("#urlInput").focus(),50); };
+$("#addBtn").onclick = ()=>{ $("#urlInput").value=""; const r=$("#addHint"); r.className="cfg-result"; r.innerHTML=""; addModal.classList.add("show"); setTimeout(()=>$("#urlInput").focus(),50); };
 $("#addCancel").onclick = ()=>addModal.classList.remove("show");
 $("#addStart").onclick = async ()=>{
-  const urls = $("#urlInput").value.split(/\n+/).map(s=>s.trim()).filter(Boolean);
+  const urls = $("#urlInput").value.split(/\n+/).map(s=>s.trim()).filter(Boolean)
+    .map(u=> (!/^https?:\/\//i.test(u) && /\./.test(u)) ? ("https://"+u) : u);   // 容错补协议
   const maxPages = parseInt($("#pagesInput").value,10)||5;
-  if(!urls.length || urls.some(u=>!/^https?:\/\//.test(u))){ alert("请输入合法的 http(s) 网址（每行一个）"); return; }
+  const r=$("#addHint");
+  if(!urls.length || urls.some(u=>!/^https?:\/\/.+/i.test(u))){ r.className="cfg-result show bad"; r.innerHTML='<div class="cfg-err">请输入合法的 http(s) 网址（每行一个）</div>'; return; }
+  btnLoading($("#addStart"), true, "提交中…");
   try{
     await fetch("/api/extract",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({urls,maxPages})});
     addModal.classList.remove("show");
     pollJobs();
-  }catch(err){ alert("提交失败："+err.message); }
+  }catch(err){ r.className="cfg-result show bad"; r.innerHTML=`<div class="cfg-err">提交失败：${esc(err.message)}</div>`; }
+  finally{ btnLoading($("#addStart"), false); }
 };
 
 // —— 任务托盘（轮询 /api/jobs，展示所有提炼任务的实时进度）——
@@ -1204,49 +1769,115 @@ function stepsHtml(cur, status){
     return `<li class="step ${cls}"><span class="stepdot"></span><span class="steptxt"><b>${s.name}</b></span></li>`;
   }).join("")+`</ul>`;
 }
+const TI_ICONS = {
+  queued: '<span class="ti-dot"></span>',
+  running: '<span class="ti-spin"></span>',
+  done: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>',
+  error: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>',
+};
+const BADGE_TEXT = { queued:"排队中", running:"提炼中", done:"已完成", error:"失败" };
+const trayNodes = new Map();   // jobId -> element（增量更新，避免每轮重建导致进度跳变/入场重放）
+
+// 增量更新单个任务卡片：首建结构 + 绑定交互；后续仅更新动态部分（进度平滑过渡）
+function updateTrayItem(el, j){
+  el._job = j;
+  const st = j.status;
+  if(!el._built){
+    el.innerHTML =
+      `<div class="ti-head">`+
+        `<span class="ti-ic"></span>`+
+        `<span class="ti-src"></span>`+
+        `<span class="ti-badge"></span>`+
+        `<button class="ti-x" title="移除" aria-label="移除">✕</button>`+
+      `</div>`+
+      `<div class="ti-bar"><div class="ti-fill"></div></div>`+
+      `<div class="ti-meta"><span class="ti-lab"></span><span class="ti-right"></span></div>`+
+      `<div class="ti-steps"></div>`;
+    el._built = true;
+    el.querySelector(".ti-src").onclick = ()=>{
+      const id = el.dataset.id;
+      trayExpanded.has(id) ? trayExpanded.delete(id) : trayExpanded.add(id);
+      updateTrayItem(el, el._job);
+    };
+    el.querySelector(".ti-x").onclick = async ()=>{
+      await fetch("/api/jobs/dismiss",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({jobId:el.dataset.id})});
+      pollJobs();
+    };
+  }
+  const expanded = trayExpanded.has(j.jobId);
+  const keepEnter = el.classList.contains("enter") ? " enter" : "";
+  el.className = `tray-item ${st}${expanded?" expanded":""}${keepEnter}`;
+  el.querySelector(".ti-ic").innerHTML = TI_ICONS[st] || TI_ICONS.queued;
+  const src = el.querySelector(".ti-src"); src.textContent = j.source; src.title = j.url || "";
+  el.querySelector(".ti-badge").textContent = BADGE_TEXT[st] || st;
+  el.querySelector(".ti-fill").style.width = (st==="done" ? 100 : (j.percent||0)) + "%";
+  // 明细：运行中显示当前步骤 + 百分比；完成/失败显示状态与上游模型
+  const lab = el.querySelector(".ti-lab"), right = el.querySelector(".ti-right");
+  const model = j.model && j.model.real ? `${j.model.tier}→${j.model.real}` : "";
+  if(st==="running"){ lab.textContent = j.label || "提炼中…"; right.className="ti-right"; right.textContent = (j.percent||0) + "%"; }
+  else if(st==="queued"){ lab.textContent = "排队中，等待空闲…"; right.className="ti-right"; right.textContent = ""; }
+  else if(st==="done"){ lab.textContent = "已完成，加入你的资产库"; right.className="ti-right mdl"; right.textContent = model; }
+  else { lab.textContent = "失败：" + (j.error || "未知错误"); right.className="ti-right mdl"; right.textContent = ""; }
+  // 展开时才填充步骤（避免无谓开销）
+  const steps = el.querySelector(".ti-steps");
+  if(expanded) steps.innerHTML = stepsHtml(j.step, j.status);
+  else if(steps.innerHTML) steps.innerHTML = "";
+  // 关闭按钮仅在完成/失败可用
+  el.querySelector(".ti-x").style.display = (st==="done"||st==="error") ? "" : "none";
+}
+
 function renderTray(list){
-  const tray=$("#tray");
-  if(!list.length){ tray.innerHTML=""; return; }
-  tray.innerHTML = list.map(j=>{
-    const st=j.status;
-    const statusText = st==="queued"?"排队中…":st==="running"?`${j.label||"提炼中"} · ${j.percent}%`:st==="done"?"已完成":"失败";
-    const model = j.model&&j.model.real ? `${j.model.tier}→${j.model.real}` : "";
-    const canClose = st==="done"||st==="error";
-    return `<div class="tray-item ${st} ${trayExpanded.has(j.jobId)?"expanded":""}" data-id="${j.jobId}">
-      <div class="tray-top">
-        <span class="tray-src" title="${esc(j.url)}">${esc(j.source)}</span>
-        ${canClose?`<button class="tray-x" data-x="${j.jobId}">✕</button>`:`<span class="tray-x" style="opacity:.35">•••</span>`}
-      </div>
-      <div class="tray-bar"><div class="tray-fill" style="width:${j.percent}%"></div></div>
-      <div class="tray-meta"><span class="lab">${esc(statusText)}${j.error&&st==="error"?" · "+esc(j.error):""}</span>${model?`<span class="mdl">${esc(model)}</span>`:""}</div>
-      <div class="tray-steps">${stepsHtml(j.step, j.status)}</div>
-    </div>`;
-  }).join("");
-  tray.querySelectorAll(".tray-src").forEach(el=>el.onclick=()=>{ const id=el.closest(".tray-item").dataset.id; trayExpanded.has(id)?trayExpanded.delete(id):trayExpanded.add(id); renderTray(list); });
-  tray.querySelectorAll("[data-x]").forEach(b=>b.onclick=async()=>{ await fetch("/api/jobs/dismiss",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({jobId:b.dataset.x})}); pollJobs(); });
+  const tray = $("#tray");
+  const seen = new Set();
+  for(const j of list){
+    seen.add(j.jobId);
+    let el = trayNodes.get(j.jobId);
+    if(!el){
+      el = document.createElement("div");
+      el.className = "tray-item enter";
+      el.dataset.id = j.jobId;
+      tray.appendChild(el);
+      trayNodes.set(j.jobId, el);
+      setTimeout(()=>el.classList.remove("enter"), 460);   // 入场动画仅播放一次
+    }
+    updateTrayItem(el, j);
+  }
+  for(const [id, el] of trayNodes){ if(!seen.has(id)){ el.remove(); trayNodes.delete(id); } }
 }
 async function pollJobs(){
   let data; try{ data=await (await fetch("/api/jobs")).json(); }catch{ return; }
   const list=(data.jobs||[]);
   renderTray(list);
   let refreshed=false;
-  for(const j of list){ const prev=prevStatus[j.jobId]; if(prev && prev!=="done" && j.status==="done" && !refreshed){ load(); refreshed=true; } prevStatus[j.jobId]=j.status; }
+  for(const j of list){ const prev=prevStatus[j.jobId]; if(prev && prev!=="done" && j.status==="done" && !refreshed){ if(layoutMode==="immersive" && j.name){ _imPendingFocus=j.name; imToast("✨ 新资产已加入你的库", true); } load(); refreshed=true; } prevStatus[j.jobId]=j.status; }
 }
 setInterval(pollJobs, 1500);
 pollJobs();
 
 // —— 导入 ——
 const importModal = $("#importModal");
-$("#importBtn").onclick = ()=>{ $("#importHint").textContent=""; importModal.classList.add("show"); };
+function openImport(){ const r=$("#importResult"); r.className="cfg-result"; r.innerHTML=""; importModal.classList.add("show"); setTimeout(()=>$("#importPath").focus(),60); }
+$("#importBtn").onclick = openImport;
 $("#importCancel").onclick = ()=>importModal.classList.remove("show");
 if(NATIVE?.pickStylepack){ $("#importBrowse").style.display=""; $("#importBrowse").onclick = async ()=>{ const p=await NATIVE.pickStylepack(); if(p) $("#importPath").value=p; }; }
 $("#importGo").onclick = async ()=>{
-  const p = $("#importPath").value.trim(); if(!p) return;
-  $("#importHint").textContent = "导入中…";
-  const r = await fetch("/api/import",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({path:p})});
-  const j = await r.json();
-  if(j.ok){ $("#importHint").textContent="已导入："+j.source; await load(); setTimeout(()=>importModal.classList.remove("show"),700); }
-  else $("#importHint").textContent="失败："+(j.error||"未知错误");
+  const p = $("#importPath").value.trim();
+  const r = $("#importResult");
+  if(!p){ r.className="cfg-result show bad"; r.innerHTML='<div class="cfg-err">请填写 .stylepack 文件路径</div>'; $("#importPath").focus(); return; }
+  btnLoading($("#importGo"), true, "导入中…");
+  r.className="cfg-result show"; r.innerHTML='<div class="cfg-res-body">导入中…</div>';
+  try{
+    const j = await (await fetch("/api/import",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({path:p})})).json();
+    if(j.ok){
+      r.className="cfg-result show ok";
+      r.innerHTML=`<div class="cfg-res-head"><span class="cfg-saved">✓ 已导入</span><span class="cfg-stat ok"><span class="cs-dot"></span>${esc(j.source||j.name||"资产")}</span></div>`;
+      await load();
+      setTimeout(()=>importModal.classList.remove("show"), 900);
+    } else {
+      r.className="cfg-result show bad"; r.innerHTML=`<div class="cfg-err">失败：${esc(j.error||"未知错误")}</div>`;
+    }
+  }catch(e){ r.className="cfg-result show bad"; r.innerHTML=`<div class="cfg-err">失败：${esc(e.message)}</div>`; }
+  finally{ btnLoading($("#importGo"), false); }
 };
 
 // —— lint ——
@@ -1255,12 +1886,19 @@ const lintFsPicker = setupFolderPicker({ browseBtn: $("#lintBrowse"), input: $("
 $("#lintBtn").onclick = ()=>{ if(!currentPack) return; $("#lintPackName").textContent=currentPack.source; $("#lintResult").innerHTML=""; lintFsPicker.hide(); lintModal.classList.add("show"); };
 $("#lintCancel").onclick = ()=>lintModal.classList.remove("show");
 $("#lintRun").onclick = async ()=>{
-  const p = $("#lintPath").value.trim(); if(!p||!currentPack) return;
+  if(!currentPack) return;
+  const p = $("#lintPath").value.trim();
+  if(!p){ $("#lintResult").innerHTML = '<div class="cfg-result show bad"><div class="cfg-err">请填写项目路径</div></div>'; return; }
+  const dlg = lintModal.querySelector(".dialog");
+  btnLoading($("#lintRun"), true, "校验中…");
   $("#lintResult").innerHTML = `<div class="hint">校验中…</div>`;
-  const r = await fetch("/api/lint",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({name:currentPack.name,path:p,spacing:$("#lintSpacing").checked})});
-  const rep = await r.json();
-  if(rep.error){ $("#lintResult").innerHTML = `<div class="hint">失败：${esc(rep.error)}</div>`; return; }
-  $("#lintResult").innerHTML = lintHtml(rep);
+  try{
+    const r = await fetch("/api/lint",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({name:currentPack.name,path:p,spacing:$("#lintSpacing").checked})});
+    const rep = await r.json();
+    if(rep.error){ animateDialogHeight(dlg, ()=>{ $("#lintResult").innerHTML = '<div class="cfg-result show bad"><div class="cfg-err">失败：'+esc(rep.error)+'</div></div>'; }); }
+    else { animateDialogHeight(dlg, ()=>{ $("#lintResult").innerHTML = lintHtml(rep); }); }
+  }catch(e){ $("#lintResult").innerHTML = '<div class="cfg-result show bad"><div class="cfg-err">失败：'+esc(e.message)+'</div></div>'; }
+  finally{ btnLoading($("#lintRun"), false); }
 };
 function scoreStyle(s){
   const col = s>=85?"var(--green)":s>=60?"var(--amber)":"var(--red)";
@@ -1315,11 +1953,95 @@ const WIZ_PANES = ["wizTool","wizPath","wizPreview","wizDone","wizManual"];
 function showPane(id){ WIZ_PANES.forEach(p=>{ const el=$("#"+p); if(el) el.style.display = p===id?"":"none"; }); }
 // n: 1..3 高亮步骤；0 表示隐藏步骤条（完成页 / 手动面板）
 function setWizSteps(n){
-  $("#wizSteps").style.display = n>0 ? "" : "none";
+  $("#wizSteps").classList.toggle("hide", !(n>0));   // 平滑折叠，替代 display:none 硬跳
   applyModal.querySelectorAll(".wiz-step").forEach(s=>{
     const k=+s.dataset.s;
     s.classList.toggle("active", k===n);
     s.classList.toggle("done", k<n);
+  });
+}
+
+const _prefersReduced = ()=> window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+// 弹窗高度平滑过渡：测量内容变化前/后高度，用一次 height 过渡衔接；动画期间关闭 backdrop 模糊防闪烁。
+// 用于内容切换后整体重排的弹窗（lint 结果、模型详情）。
+function animateDialogHeight(dialog, mutate){
+  if(!dialog){ mutate(); return; }
+  const modal = dialog.closest(".modal");
+  if(!modal || !modal.classList.contains("show") || _prefersReduced()){ mutate(); return; }
+  const from = dialog.getBoundingClientRect().height;
+  mutate();
+  dialog.style.transition = "none";
+  dialog.style.height = "auto";
+  const to = dialog.getBoundingClientRect().height;
+  if(Math.abs(to - from) < 1){ dialog.style.height=""; dialog.style.transition=""; return; }
+  dialog.style.height = from + "px";
+  dialog.classList.add("resizing");         // 关闭 backdrop 重采样，去卡顿/闪烁
+  void dialog.offsetHeight;                  // 强制回流，确保从 from 起步
+  dialog.style.transition = "height .42s cubic-bezier(.32,.72,0,1)";
+  dialog.style.height = to + "px";
+  const cleanup = ()=>{ dialog.style.height=""; dialog.style.transition=""; dialog.classList.remove("resizing"); dialog.removeEventListener("transitionend", onEnd); clearTimeout(dialog._htimer); };
+  const onEnd = (e)=>{ if(e.target===dialog && e.propertyName==="height") cleanup(); };
+  dialog.addEventListener("transitionend", onEnd);
+  clearTimeout(dialog._htimer);
+  dialog._htimer = setTimeout(cleanup, 640);
+}
+
+const applyDialog = ()=> applyModal.querySelector(".dialog");
+const STEP_POS = { wizTool:0, wizPath:1, wizPreview:2, wizDone:3, wizManual:1 };  // 决定滑动方向（前进/后退）
+let _wizFinish = null;   // 进行中滑动的强制收尾器（快速连点时先落定上一段再切换）
+function currentPaneId(){ return WIZ_PANES.find(p=>{ const el=$("#"+p); return el && el.style.display!=="none"; }); }
+
+// 方向性滑动切换步骤：过渡期两面板绝对叠放、交叉滑动淡入淡出；内层 .wiz-panes 高度过渡，
+// 外层 .dialog 逐帧跟随内容自然形变（不直接动带 backdrop 的元素，故不闪烁）。
+function gotoStep(newId, step){
+  if(_wizFinish) _wizFinish();               // 落定上一段，保证状态一致
+  const shown = applyModal.classList.contains("show");
+  const oldId = currentPaneId();
+  if(!shown || _prefersReduced() || !oldId || oldId===newId){
+    showPane(newId); setWizSteps(step); return;   // 初次打开/减弱动效：直接切换
+  }
+  const panes = $("#wizPanes"), dialog = applyDialog();
+  const oldEl = $("#"+oldId), newEl = $("#"+newId);
+  const dir = (STEP_POS[newId] >= STEP_POS[oldId]) ? 1 : -1;
+
+  setWizSteps(step);                          // 步骤条状态 + 折叠（自带过渡）
+
+  const fromH = panes.getBoundingClientRect().height;
+  panes.style.height = fromH + "px";
+  panes.classList.add("sliding");             // 子面板转绝对定位、容器裁剪
+  dialog.classList.add("resizing");           // 关闭 backdrop 模糊
+
+  newEl.style.display = "";                    // 新面板进场（绝对定位、暂不可见）
+  // 重新触发进入面板的"内容分层浮入"（移除→回流→添加，保证每次都重放）
+  newEl.classList.remove("enter"); void newEl.offsetWidth; newEl.classList.add("enter");
+  const toH = newEl.getBoundingClientRect().height;
+
+  // 整屏推拽：两面板均不透明、各平移一个整屏宽（不做透明度交叉），任意位置只显示一个面板 → 无文字残影
+  oldEl.classList.add("anim"); newEl.classList.add("anim");
+  oldEl.style.transform = "translateX(0)";
+  newEl.style.transform = "translateX(" + (dir*100) + "%)";
+  void panes.offsetHeight;                     // 回流，锁定起点
+
+  let finished = false;
+  const finish = ()=>{
+    if(finished) return; finished = true; _wizFinish = null;
+    clearTimeout(panes._wtimer);
+    panes.classList.remove("sliding");
+    dialog.classList.remove("resizing");
+    panes.style.height = "";
+    [oldEl,newEl].forEach(el=>{ el.classList.remove("anim"); el.style.transform=""; el.style.opacity=""; });
+    WIZ_PANES.forEach(p=>{ const el=$("#"+p); if(el) el.style.display = (p===newId) ? "" : "none"; });
+  };
+  clearTimeout(panes._wtimer);
+  panes._wtimer = setTimeout(finish, 520);     // 确定性收尾（略长于 .46s 过渡）
+  _wizFinish = finish;
+
+  requestAnimationFrame(()=>{
+    if(finished) return;
+    panes.style.height = toH + "px";           // 触发高度过渡；.dialog 逐帧跟随
+    oldEl.style.transform = "translateX(" + (-dir*100) + "%)";  // 旧面板整屏推出
+    newEl.style.transform = "translateX(0)";                     // 新面板推入就位
   });
 }
 
@@ -1333,7 +2055,7 @@ function renderToolGrid(){
   });
 }
 
-function gotoTool(){ showPane("wizTool"); setWizSteps(1); }
+function gotoTool(){ gotoStep("wizTool", 1); }
 function gotoPath(){
   $("#toolChosen").innerHTML =
     `<span class="tc-name">${esc(applyTool.name)}</span><span class="tc-file">→ ${esc(applyTool.file)}</span>`+
@@ -1341,7 +2063,7 @@ function gotoPath(){
   $("#toolChg").onclick = gotoTool;
   $("#applyPathHint").textContent = "";
   $("#applyFs").style.display = "none"; // 每次进入选项目步骤先收起浏览器
-  showPane("wizPath"); setWizSteps(2);
+  gotoStep("wizPath", 2);
   setTimeout(()=>$("#applyPath").focus(), 60);
 }
 function openApply(){
@@ -1354,12 +2076,11 @@ function openApply(){
 }
 
 $("#applyBtn").onclick = openApply;
-$("#applyClose").onclick = ()=>applyModal.classList.remove("show");
 $("#applyDoneClose").onclick = ()=>applyModal.classList.remove("show");
 $("#applyManualClose").onclick = ()=>applyModal.classList.remove("show");
 $("#wizBack1").onclick = gotoTool;
 $("#wizBack2").onclick = gotoPath;
-$("#applyManualLink").onclick = ()=>{ showPane("wizManual"); setWizSteps(0); };
+$("#applyManualLink").onclick = ()=>{ gotoStep("wizManual", 0); };
 $("#wizManualBack").onclick = gotoTool;
 $("#applyModal").onclick = (e)=>{ if(e.target.id==="applyModal") applyModal.classList.remove("show"); };
 
@@ -1381,14 +2102,16 @@ $("#wizToPreview").onclick = async ()=>{
   if(!currentPack||!applyTool) return;
   const p=$("#applyPath").value.trim();
   if(!p){ $("#applyPathHint").textContent="请先填写项目根目录路径"; return; }
+  const btn=$("#wizToPreview"); const o=btn.textContent; btn.disabled=true; btn.textContent="检查中…";
   $("#applyPathHint").textContent="正在做安全检查并生成预览…";
   try{
     const j=await (await fetch("/api/apply/preview",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({name:currentPack.name,path:p,target:applyTool.target})})).json();
     if(!j.ok){ $("#applyPathHint").textContent="预览失败："+(j.error||"未知"); return; }
     $("#applyPathHint").textContent="";
-    renderPreview(j);
-    showPane("wizPreview"); setWizSteps(3);
+    renderPreview(j);          // 先备好内容，再滑动进场（数据就绪后才切换，避免切换中加载渲染）
+    gotoStep("wizPreview", 3);
   }catch(e){ $("#applyPathHint").textContent="预览失败："+e.message; }
+  finally{ btn.disabled=false; btn.textContent=o; }
 };
 
 function renderPreview(j){
@@ -1402,7 +2125,9 @@ function renderPreview(j){
   $("#guardBox").innerHTML = parts.join("");
 
   // —— 将执行的操作 & 内容 ——
-  $("#applyPreviewOps").innerHTML = (j.actions||[]).map(a=>`· <code>${esc(a.path)}</code> → ${esc(OP_LABEL[a.op]||a.op)}`).join("<br>");
+  $("#applyPreviewOps").innerHTML = (j.actions||[]).map(a=>
+    `<div class="op-row"><code>${esc(a.path)}</code><span class="op-arrow">→</span><span class="op-desc">${esc(OP_LABEL[a.op]||a.op)}</span></div>`
+  ).join("") || `<div class="op-row"><span class="op-desc">（无改动）</span></div>`;
   $("#applyPreviewBlock").textContent = j.block ? j.block : (j.fullSpec ? "（写入完整规范 ai-rules.md 全文到该 steering 文件）" : "（仅写入 haokan-design/ 目录文件，不修改任何现有文档）");
   $("#applyPreviewAssets").textContent = (j.assets&&j.assets.length) ? ("同时写入独立目录（不污染现有文档）："+j.assets.join("，")) : "";
 
@@ -1427,7 +2152,7 @@ $("#applyPreviewConfirm").onclick = async ()=>{
     if(j.ok){
       $("#applyDoneMsg").innerHTML = "已写入："+ (j.written||[]).map(w=>`<code>${esc(w)}</code>`).join("、") + ((j.notes&&j.notes.length)?("<br>"+j.notes.map(esc).join("<br>")):"");
       $("#applyDoneNext").innerHTML = `下一步：让 <b>${esc(applyTool.name)}</b> 照常生成 / 修改 UI，它会自动读取刚写入的设计规范。产出后回到详情页点「校验项目」，用设计 token 回归检查是否守规矩、有没有"AI 味"。`;
-      showPane("wizDone"); setWizSteps(0);
+      gotoStep("wizDone", 0);
     } else {
       $("#guardBox").innerHTML = `<div class="g-danger">✗ 写入失败：${esc(j.error||"未知")}</div>` + $("#guardBox").innerHTML;
       btn.disabled=false;
@@ -1458,7 +2183,9 @@ function renderCmpMode(mode){
   if(mode==="demo"){
     tokenView.style.display="none"; demoView.style.display="";
     $("#cmpDesc").textContent="同一份中立内容，套用各资产的设计 token 与布局原型并排渲染——差异来自设计语言与构图本身，而非页面内容。";
-    demoView.innerHTML = cmpPacks.map(p=>`<div class="cmp-demo"><div class="cd-h"><span class="cdot" style="background:${esc(p.primaryColor)}"></span>${esc(p.source)}</div><iframe loading="lazy" src="/packs/${encodeURIComponent(p.name)}/demo.html?bare=1"></iframe></div>`).join("");
+    demoView.innerHTML = cmpPacks.map(p=>`<div class="cmp-demo"><div class="cd-h"><span class="cdot" style="background:${esc(p.primaryColor)}"></span>${esc(p.source)}</div><iframe class="loading" loading="lazy" src="/packs/${encodeURIComponent(p.name)}/demo.html?bare=1"></iframe></div>`).join("");
+    // 加载完成后淡入，避免并排样张出现白块
+    demoView.querySelectorAll("iframe.loading").forEach(f=>f.addEventListener("load", ()=>requestAnimationFrame(()=>f.classList.remove("loading")), { once:true }));
   } else {
     demoView.style.display="none"; demoView.innerHTML=""; tokenView.style.display="";
     $("#cmpDesc").textContent="并排比较所选资产的 token 系统。";
@@ -1472,10 +2199,10 @@ function cmpCol(p,tok){
   const spacing = tokVals(tok.spacing).join(" · ");
   const radius = Object.entries(tok.radius||{}).filter(([k])=>k!=="default").map(([k,t])=>t.$value).join(" · ");
   const fonts = [tok.font?.primary?.$value, tok.font?.secondary?.$value].filter(Boolean).join(" / ");
-  const tags = (p.tags||[]).map(t=>`<span class="tag">${esc(t)}</span>`).join("");
+  const tags = curTags(p).map(t=>`<span class="tag">${esc(t)}</span>`).join("");
   return `<div class="cmp-col">
     <div class="cmp-cover">${p.cover?`<img src="${p.cover}">`:""}</div>
-    <h4>${esc(p.source)}</h4><div class="sub">${esc(aesList(p.aesthetic).join(", "))} · ${esc(p.theme||"")} · ${esc(p.density||"")}</div>
+    <h4>${esc(p.source)}</h4><div class="sub">${esc(aesListLabel(p.aesthetic).join(", "))} · ${esc(p.theme||"")} · ${esc(p.density||"")}</div>
     <div class="cmp-sec"><div class="lbl">色板</div><div class="cmp-palette">${palette}</div></div>
     <div class="cmp-sec"><div class="lbl">字体</div><div class="cmp-kv">${esc(fonts||"—")}</div></div>
     <div class="cmp-sec"><div class="lbl">字号阶</div><div class="cmp-kv">${esc(sizes||"—")}</div></div>
@@ -1495,55 +2222,88 @@ function visLabel(v){
 function srcLabel(s){ return ({probe:"真实探测",heuristic:"按模型名推断","offline-heuristic":"离线推断",unknown:"未确定"})[s] || s || ""; }
 function renderModelBadge(){
   const dot=$("#modelDot"), txt=$("#modelBadgeText");
-  if(!MODEL_INFO){ txt.textContent="模型"; dot.className="mdot"; return; }
-  dot.className = "mdot " + (MODEL_INFO.ok ? "ok" : "bad");
+  // 沉浸顶栏的精致模型徽章
+  const imDot=$("#imModelDot"), imName=$("#imModelName"), imVis=$("#imModelVis");
+  if(!MODEL_INFO){
+    if(txt){ txt.textContent="模型"; } if(dot){ dot.className="mdot"; }
+    if(imName){ imName.textContent="模型…"; } if(imDot){ imDot.className="mdot"; } if(imVis){ imVis.textContent=""; }
+    return;
+  }
   const v = visLabel(MODEL_INFO.vision);
   const name = MODEL_INFO.real || MODEL_INFO.configured || "模型";
-  txt.textContent = `${name} · ${v.text}`;
+  const dotCls = "mdot " + (MODEL_INFO.ok ? "ok" : "bad");
+  if(dot){ dot.className = dotCls; } if(txt){ txt.textContent = `${name} · ${v.text}`; }
+  if(imDot){ imDot.className = dotCls; }
+  if(imName){ imName.textContent = name; }
+  if(imVis){ imVis.textContent = v.text; imVis.classList.toggle("on", MODEL_INFO.vision && MODEL_INFO.vision.supported===true); }
 }
 function renderModelDetail(){
-  const m = MODEL_INFO || {}; const v = visLabel(m.vision); const src = m.vision ? srcLabel(m.vision.source) : "";
-  $("#modelBody").innerHTML = `
-    <div class="model-row"><span class="k">连通状态</span><span class="v">${m.ok?'<span style="color:var(--green)">✓ 已连通</span>':'<span style="color:var(--red)">✗ 未连通</span>'}${m.error?`　<span class="muted">${esc(m.error)}</span>`:""}</span></div>
-    <div class="model-row"><span class="k">配置模型</span><span class="v">${esc(m.configured||"—")}${m.tier?`　<span class="muted">(${esc(m.tier)})</span>`:""}</span></div>
-    <div class="model-row"><span class="k">实际上游</span><span class="v"><b>${esc(m.real||"—")}</b></span></div>
-    <div class="model-row"><span class="k">视觉能力</span><span class="v"><span class="vbadge ${v.cls}">${v.text}</span>${src?`　<span class="muted">${esc(src)}</span>`:""}</span></div>
-    ${m.vision&&m.vision.reply?`<div class="model-row"><span class="k">探测回执</span><span class="v"><div class="model-reply">${esc(m.vision.reply)}</div></span></div>`:""}
-    ${m.vision&&m.vision.detail?`<div class="model-row"><span class="k">说明</span><span class="v muted">${esc(m.vision.detail)}</span></div>`:""}
-    <div class="model-row"><span class="k">端点</span><span class="v muted">${esc(m.endpoint||"—")}</span></div>
-    <div class="model-row"><span class="k">配置来源</span><span class="v muted">${esc(m.configSource||"—")}${m.usingApp?'　<span class="cap-badge">App 专用</span>':""}</span></div>
-    ${capComparison(m)}`;
-}
-// 无视觉 vs 有视觉：两档能力对比，高亮当前模型命中的一档
-function capComparison(m){
-  const has = m.vision && m.vision.supported === true;   // 明确有视觉
-  const no  = m.vision && m.vision.supported === false;  // 明确无视觉
-  const curCol = has ? "vision" : (no ? "novis" : null); // null=未确定，不高亮
-  const rows = [
-    ["设计 token（色彩 / 字体 / 间距 / 圆角 / 动效）", true, true],
-    ["布局指纹（容器宽 / 栅格 / Hero 构图 / 留白，确定性抽取）", true, true],
-    ["布局原型化样张", true, true],
-    ["结构化布局规范 + Do/Don't", true, true],
-    ["视觉构图 / 审美规范（模型真的“看”了页面）", false, true],
-    ["像素级封面挑选 + 参考截图对照评估", false, true],
+  const m = MODEL_INFO || {};
+  const v = visLabel(m.vision);
+  const src = m.vision ? srcLabel(m.vision.source) : "";
+  const hasVision = !!(m.vision && m.vision.supported === true);
+  const noVision  = !!(m.vision && m.vision.supported === false);
+  const name = m.real || m.configured || "模型";
+  const haloCls = m.ok ? "ok" : "bad";
+  const statusIcon = m.ok
+    ? '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>'
+    : '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>';
+  const meta = [
+    m.configured ? `配置 <b>${esc(m.configured)}</b>` : "",
+    (m.real && m.real!==m.configured) ? `上游 <b>${esc(m.real)}</b>` : "",
+  ].filter(Boolean).join("　·　") || "—";
+
+  // 能力档位：前 4 项所有模型通用；后 2 项仅具备视觉时解锁
+  const caps = [
+    ["设计 Token", "色彩 / 字体 / 间距 / 圆角 / 动效", true],
+    ["布局指纹", "容器宽 / 栅格 / Hero 构图 / 留白（确定性抽取）", true],
+    ["布局原型化样张", "用这套 token 生成中立样张", true],
+    ["结构化布局规范 + Do/Don't", "可直接约束 AI 编码工具", true],
+    ["视觉构图 / 审美规范", "模型真的“看”了页面后的构图与气质", hasVision],
+    ["像素级封面挑选 + 参考截图评估", "对照真实截图评估还原度", hasVision],
   ];
-  const ynovis = curCol==="novis" ? " active" : "";
-  const yvis = curCol==="vision" ? " active" : "";
-  const cell = (on)=> on ? '<span class="yes">✓</span>' : '<span class="no">—</span>';
-  const curLabel = has
-    ? '当前模型具备视觉 → 命中<b>「有视觉」</b>档（完整天花板）。'
-    : (no
-      ? '当前模型<b>无视觉</b> → 命中<b>「无视觉」</b>档：仍能提炼 token 与确定性布局指纹并驱动样张，但拿不到“模型看图后的构图/审美规范”。想要完整能力，请在「模型设置」里换一个具备视觉的模型。'
-      : '当前模型视觉能力<b>未确定</b>（探测不明确）。可在「模型设置」里换模型并重新探测。');
-  return `
-    <div class="cap-head">两档能力对比</div>
-    <table class="cap-cmp">
-      <thead><tr><th>能力</th><th class="c${ynovis}">无视觉模型</th><th class="c${yvis}">有视觉模型</th></tr></thead>
-      <tbody>
-        ${rows.map(r=>`<tr><td>${esc(r[0])}</td><td class="c${ynovis}">${cell(r[1])}</td><td class="c${yvis}">${cell(r[2])}</td></tr>`).join("")}
-      </tbody>
-    </table>
-    <div class="cap-note">${curLabel}</div>`;
+  const capItems = caps.map(([t,d,on])=>
+    `<div class="cap-item ${on?"on":"off"}"><span class="ci-ic">${on?"✓":"—"}</span><span class="ci-txt">${esc(t)}<em>${esc(d)}</em></span></div>`
+  ).join("");
+  const tierPill = hasVision
+    ? '<span class="tier-pill full">有视觉档 · 完整天花板</span>'
+    : (noVision ? '<span class="tier-pill lite">无视觉档</span>' : '<span class="tier-pill unk">视觉未确定</span>');
+  const note = hasVision
+    ? '当前模型具备视觉，已解锁<b>完整能力天花板</b>。'
+    : (noVision
+      ? '当前为<b>无视觉档</b>：仍能提炼 token、确定性布局指纹并驱动样张，但拿不到“看图后”的构图 / 审美规范。想要完整能力，点下方<b>「模型设置」</b>换一个具备视觉的模型。'
+      : '视觉能力<b>未确定</b>（探测不明确）。可在下方<b>「模型设置」</b>换模型并重新探测。');
+
+  animateDialogHeight(modelModal.querySelector(".dialog"), ()=>{
+  $("#modelBody").innerHTML = `
+    <div class="mdl-hero">
+      <div class="mdl-halo ${haloCls}">${statusIcon}</div>
+      <div class="mdl-hero-txt">
+        <div class="mdl-name" title="${esc(name)}">${esc(name)}</div>
+        <div class="mdl-meta">${meta}</div>
+        <div class="mdl-badges">
+          <span class="vbadge ${v.cls}">${v.text}</span>
+          ${src?`<span class="mdl-chip">${esc(src)}</span>`:""}
+          ${m.usingApp?`<span class="mdl-chip accent">App 专用配置</span>`:""}
+        </div>
+      </div>
+    </div>
+
+    <div class="mdl-tiles">
+      <div class="mdl-tile"><div class="t-k">连通状态</div><div class="t-v">${m.ok?'<span style="color:var(--green)">● 已连通</span>':'<span style="color:var(--red)">● 未连通</span>'}</div></div>
+      <div class="mdl-tile"><div class="t-k">配置来源</div><div class="t-v">${esc(m.configSource||"—")}</div></div>
+      <div class="mdl-tile wide"><div class="t-k">端点</div><div class="t-v mono">${esc(m.endpoint||"—")}</div></div>
+      ${m.error?`<div class="mdl-tile wide err"><div class="t-k">错误</div><div class="t-v">${esc(m.error)}</div></div>`:""}
+    </div>
+
+    ${m.vision&&m.vision.reply?`<div class="mdl-reply"><div class="t-k" style="margin-bottom:5px">视觉探测回执</div>${esc(m.vision.reply)}</div>`:""}
+
+    <div class="mdl-cap">
+      <div class="mdl-cap-h"><span class="ch-t">能力档位</span>${tierPill}</div>
+      <div class="mdl-cap-list">${capItems}</div>
+    </div>
+    <div class="mdl-note">${note}</div>`;
+  });
 }
 async function loadModel(force){
   try{
@@ -1560,8 +2320,16 @@ $("#modelModal").onclick = (e)=>{ if(e.target.id==="modelModal") modelModal.clas
 
 // —— 模型设置（App 专用，独立于 Claude Code）——
 const modelCfgModal = $("#modelCfgModal");
+const _EYE_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></svg>';
+const _EYE_OFF_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10 10 0 0 1 12 20C5 20 2 12 2 12a18 18 0 0 1 5-6.06M9.9 4.24A10 10 0 0 1 12 4c7 0 10 8 10 8a18 18 0 0 1-2.16 3.19"/><line x1="1" y1="1" x2="23" y2="23"/></svg>';
+$("#cfgEye").onclick = ()=>{
+  const inp=$("#cfgToken"); const toText = inp.type !== "text";
+  inp.type = toText ? "text" : "password";
+  $("#cfgEye").innerHTML = toText ? _EYE_OFF_SVG : _EYE_SVG;
+};
 async function openModelCfg(){
   $("#cfgResult").className = "cfg-result";
+  $("#cfgToken").type = "password"; $("#cfgEye").innerHTML = _EYE_SVG;   // 每次打开先隐藏 Key
   try{
     const j = await (await fetch("/api/model/config")).json();
     $("#cfgBase").value = j.app.baseURL || "";
@@ -1571,15 +2339,37 @@ async function openModelCfg(){
   }catch{ /* ignore */ }
   modelCfgModal.classList.add("show");
 }
-function cfgResultHtml(info){
+// 按钮 loading：暂存原 innerHTML（含图标），换成 spinner + 文案；结束还原
+function btnLoading(btn, on, text){
+  if(!btn) return;
+  if(on){
+    if(btn.dataset.html==null) btn.dataset.html = btn.innerHTML;
+    btn.disabled = true;
+    btn.innerHTML = `<span class="btn-spin"></span>${esc(text||"")}`;
+  } else {
+    btn.disabled = false;
+    if(btn.dataset.html!=null){ btn.innerHTML = btn.dataset.html; delete btn.dataset.html; }
+  }
+}
+// 测试/保存结果：连通 · 视觉 · 档位三枚状态 chip + 明细（探测回执 / 上游 / 错误）
+function cfgResultHtml(info, opts){
   if(!info) return "";
+  opts = opts || {};
+  const hasV = !!(info.vision && info.vision.supported===true);
+  const noV  = !!(info.vision && info.vision.supported===false);
   const v = visLabel(info.vision);
-  const tier = info.vision && info.vision.supported===true ? "有视觉档（完整天花板）" : (info.vision && info.vision.supported===false ? "无视觉档" : "视觉未确定");
-  return `连通：${info.ok?'<span style="color:var(--green)">✓ 成功</span>':'<span style="color:var(--red)">✗ 失败</span>'}`
-    + (info.real?`　实际上游：<b>${esc(info.real)}</b>`:"")
-    + `<br>视觉：<span class="vb">${v.text}</span>　→　将启用：<b>${tier}</b>`
-    + (info.vision&&info.vision.reply?`<br><span class="muted">探测回执：${esc(info.vision.reply)}</span>`:"")
-    + (info.error?`<br><span class="muted">${esc(info.error)}</span>`:"");
+  const tierCls = hasV ? "full" : (noV ? "lite" : "unk");
+  const tierTxt = hasV ? "有视觉档 · 完整天花板" : (noV ? "无视觉档" : "视觉未确定");
+  const head = `<div class="cfg-res-head">`
+    + (opts.saved ? `<span class="cfg-saved">✓ 已保存</span>` : "")
+    + `<span class="cfg-stat ${info.ok?'ok':'bad'}"><span class="cs-dot"></span>连通 ${info.ok?'成功':'失败'}</span>`
+    + `<span class="cfg-stat ${hasV?'ok':(noV?'bad':'unk')}"><span class="cs-dot"></span>${esc(v.text)}</span>`
+    + `<span class="tier-pill ${tierCls}">${tierTxt}</span>`
+    + `</div>`;
+  const body = info.real ? `<div class="cfg-res-body">实际上游 <b>${esc(info.real)}</b></div>` : "";
+  const reply = (info.vision&&info.vision.reply) ? `<div class="cfg-reply">视觉探测回执：${esc(info.vision.reply)}</div>` : "";
+  const err = info.error ? `<div class="cfg-err">${esc(info.error)}</div>` : "";
+  return head + body + reply + err;
 }
 function payloadFromCfg(){
   return { baseURL:$("#cfgBase").value.trim(), authToken:$("#cfgToken").value.trim(), model:$("#cfgModel").value.trim() };
@@ -1589,40 +2379,47 @@ $("#cfgClose").onclick = ()=>modelCfgModal.classList.remove("show");
 $("#modelCfgModal").onclick = (e)=>{ if(e.target.id==="modelCfgModal") modelCfgModal.classList.remove("show"); };
 $("#cfgTest").onclick = async ()=>{
   const p = payloadFromCfg();
-  if(!p.baseURL||!p.model){ const r=$("#cfgResult"); r.className="cfg-result show bad"; r.innerHTML="请先填写端点 baseURL 与模型名"; return; }
-  const r=$("#cfgResult"); r.className="cfg-result show"; r.innerHTML="测试中（连通 + 视觉探测，约数秒）…";
+  const r=$("#cfgResult");
+  if(!p.baseURL||!p.model){ r.className="cfg-result show bad"; r.innerHTML='<div class="cfg-err">请先填写端点 baseURL 与模型名</div>'; return; }
+  btnLoading($("#cfgTest"), true, "测试中…");
+  r.className="cfg-result show"; r.innerHTML='<div class="cfg-res-body">测试中（连通 + 视觉探测，约数秒）…</div>';
   try{
     const j = await (await fetch("/api/model/config/test",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify(p)})).json();
-    if(!j.ok && j.error){ r.className="cfg-result show bad"; r.innerHTML="测试失败："+esc(j.error); return; }
+    if(!j.ok && j.error){ r.className="cfg-result show bad"; r.innerHTML=`<div class="cfg-err">测试失败：${esc(j.error)}</div>`; return; }
     r.className = "cfg-result show "+(j.info&&j.info.ok?"ok":"bad");
     r.innerHTML = cfgResultHtml(j.info);
-  }catch(e){ r.className="cfg-result show bad"; r.innerHTML="测试失败："+esc(e.message); }
+  }catch(e){ r.className="cfg-result show bad"; r.innerHTML=`<div class="cfg-err">测试失败：${esc(e.message)}</div>`; }
+  finally{ btnLoading($("#cfgTest"), false); }
 };
 $("#cfgSave").onclick = async ()=>{
   const p = payloadFromCfg();
-  if(!p.baseURL||!p.model){ const r=$("#cfgResult"); r.className="cfg-result show bad"; r.innerHTML="请先填写端点 baseURL 与模型名"; return; }
-  const btn=$("#cfgSave"); const o=btn.textContent; btn.disabled=true; btn.textContent="保存中…";
-  const r=$("#cfgResult"); r.className="cfg-result show"; r.innerHTML="保存并重新探测中…";
+  const r=$("#cfgResult");
+  if(!p.baseURL||!p.model){ r.className="cfg-result show bad"; r.innerHTML='<div class="cfg-err">请先填写端点 baseURL 与模型名</div>'; return; }
+  btnLoading($("#cfgSave"), true, "保存中…");
+  r.className="cfg-result show"; r.innerHTML='<div class="cfg-res-body">保存并重新探测中…</div>';
   try{
     const j = await (await fetch("/api/model/config",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify(p)})).json();
-    if(j.error){ r.className="cfg-result show bad"; r.innerHTML="保存失败："+esc(j.error); }
+    if(j.error){ r.className="cfg-result show bad"; r.innerHTML=`<div class="cfg-err">保存失败：${esc(j.error)}</div>`; }
     else{
       MODEL_INFO = j.info; renderModelBadge(); if(modelModal.classList.contains("show")) renderModelDetail();
       r.className="cfg-result show "+(j.info&&j.info.ok?"ok":"bad");
-      r.innerHTML = "已保存。"+cfgResultHtml(j.info);
+      r.innerHTML = cfgResultHtml(j.info, {saved:true});
     }
-  }catch(e){ r.className="cfg-result show bad"; r.innerHTML="保存失败："+esc(e.message); }
-  finally{ btn.disabled=false; btn.textContent=o; }
+  }catch(e){ r.className="cfg-result show bad"; r.innerHTML=`<div class="cfg-err">保存失败：${esc(e.message)}</div>`; }
+  finally{ btnLoading($("#cfgSave"), false); }
 };
 $("#cfgClear").onclick = async ()=>{
   if(!confirm("清除本 App 的模型配置，回退到 Claude Code / 默认？")) return;
-  const r=$("#cfgResult"); r.className="cfg-result show"; r.innerHTML="清除并重新探测中…";
+  const r=$("#cfgResult");
+  btnLoading($("#cfgClear"), true, "清除中…");
+  r.className="cfg-result show"; r.innerHTML='<div class="cfg-res-body">清除并重新探测中…</div>';
   try{
     const j = await (await fetch("/api/model/config/clear",{method:"POST",headers:{"content-type":"application/json"},body:"{}"})).json();
     $("#cfgBase").value=""; $("#cfgModel").value=""; $("#cfgToken").value=""; $("#cfgToken").placeholder="sk-…";
     if(j.info){ MODEL_INFO=j.info; renderModelBadge(); if(modelModal.classList.contains("show")) renderModelDetail(); }
-    r.className="cfg-result show ok"; r.innerHTML="已清除，已回退到 Claude Code / 默认配置。";
-  }catch(e){ r.className="cfg-result show bad"; r.innerHTML="清除失败："+esc(e.message); }
+    r.className="cfg-result show ok"; r.innerHTML='<div class="cfg-res-body">已清除，回退到 Claude Code / 默认配置。</div>';
+  }catch(e){ r.className="cfg-result show bad"; r.innerHTML=`<div class="cfg-err">清除失败：${esc(e.message)}</div>`; }
+  finally{ btnLoading($("#cfgClear"), false); }
 };
 
 // 向导顶部 X 关闭
@@ -1632,8 +2429,246 @@ document.querySelectorAll(".modal").forEach(m=>m.addEventListener("click",(e)=>{
 
 document.addEventListener("keydown",(e)=>{ if(e.key==="Escape"){ closeDetail(); [addModal,importModal,lintModal,applyModal,cmpModal,modelModal,modelCfgModal].forEach(m=>m.classList.remove("show")); } });
 
-load();
+// ===== 沉浸式 3D 卡片浏览 =====
+// pos 为连续的浮动位置（0 = 首张居中）；滚动/拖拽直接改 pos 实时重绘，停下后吸附到最近整数。
+const IM = { stage:null, items:[], cards:[], pos:0, n:0, raf:0, tween:0, dragging:false, dragStartX:0, dragStartPos:0, moved:0, snapTimer:0 };
+const imClamp = (v,a,b)=> v<a?a:(v>b?b:v);
+
+function imInit(){
+  IM.stage = $("#imStage");
+  IM.stage.addEventListener("wheel",(e)=>{
+    if(!IM.n) return;
+    e.preventDefault();
+    const dz = Math.abs(e.deltaX) > Math.abs(e.deltaY) ? e.deltaX : e.deltaY;
+    imCancelTween();
+    IM.pos = imClamp(IM.pos + dz/480, 0, IM.n-1);
+    imDraw();
+    if(IM.snapTimer) clearTimeout(IM.snapTimer);
+    IM.snapTimer = setTimeout(imSnap, 130);
+  }, {passive:false});
+  IM.stage.addEventListener("pointerdown",(e)=>{
+    if(!IM.n) return;
+    // 仅记录起点，先不捕获指针——否则会劫持普通点击（点卡片/按钮）导致 click 失效
+    IM.dragging=true; IM.captured=false; IM.moved=0; IM.dragStartX=e.clientX; IM.dragStartPos=IM.pos;
+  });
+  IM.stage.addEventListener("pointermove",(e)=>{
+    if(!IM.dragging) return;
+    const dx = e.clientX - IM.dragStartX;
+    IM.moved = Math.max(IM.moved, Math.abs(dx));
+    if(IM.moved < 4) return;                 // 阈值内视为点击，不动
+    if(!IM.captured){                        // 真正开始拖动后才捕获指针
+      imCancelTween();
+      try{ IM.stage.setPointerCapture(e.pointerId); }catch(_){}
+      IM.captured=true; IM.stage.classList.add("grabbing");
+    }
+    const cardW = (IM.cards[0] && IM.cards[0].offsetWidth) || 520;
+    IM.pos = imClamp(IM.dragStartPos - dx/(cardW*0.9), 0, IM.n-1);
+    imDraw();
+  });
+  const endDrag=(e)=>{
+    if(!IM.dragging) return;
+    const wasDrag = IM.captured;
+    IM.dragging=false; IM.captured=false; IM.stage.classList.remove("grabbing");
+    try{ IM.stage.releasePointerCapture(e.pointerId); }catch(_){}
+    if(wasDrag) imSnap();                     // 仅在发生过拖动时吸附，普通点击不打扰
+  };
+  IM.stage.addEventListener("pointerup", endDrag);
+  IM.stage.addEventListener("pointercancel", endDrag);
+  $("#layoutSeg").querySelectorAll("button").forEach(b=> b.onclick = ()=> setLayout(b.dataset.layout));
+  // 沉浸顶栏动作
+  $("#imGrid").onclick = ()=> setLayout("grid");
+  $("#imImport").onclick = openImport;
+  $("#imModel").onclick = ()=>{ renderModelDetail(); modelModal.classList.add("show"); };
+  $("#imExtract").addEventListener("submit",(e)=>{ e.preventDefault(); imDoExtract(); });
+}
+
+// —— 沉浸内联「从 URL 提炼」——
+let _imBusy = false;
+function imToast(text, good){
+  const t = $("#imToast"); $("#imToastText").textContent = text;
+  t.classList.toggle("good", !!good); t.classList.add("show");
+  clearTimeout(t._timer); t._timer = setTimeout(()=> t.classList.remove("show"), 3200);
+}
+async function imDoExtract(){
+  if(_imBusy) return;
+  const box = $("#imExtract"), inp = $("#imUrl");
+  let url = inp.value.trim();
+  if(url && !/^https?:\/\//i.test(url) && /\./.test(url)) url = "https://" + url;  // 容错：省略协议
+  if(!/^https?:\/\/.+/i.test(url)){
+    box.classList.remove("err"); void box.offsetWidth; box.classList.add("err");  // 抖动
+    inp.focus();
+    imToast("请输入有效网址，例如 https://linear.app");
+    return;
+  }
+  _imBusy = true; const go = $("#imGoBtn"); go.disabled = true; box.classList.add("busy");
+  try{
+    await fetch("/api/extract",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({urls:[url],maxPages:5})});
+    inp.value = "";
+    box.classList.remove("ok"); void box.offsetWidth; box.classList.add("ok");   // 成功脉冲
+    imToast("已开始提炼 · 正在为你收集这套设计语言", true);
+    pollJobs();
+  }catch(err){
+    box.classList.remove("err"); void box.offsetWidth; box.classList.add("err");
+    imToast("提交失败：" + err.message);
+  }finally{
+    _imBusy = false; go.disabled = false; box.classList.remove("busy");
+  }
+}
+
+function setLayout(mode){
+  layoutMode = mode;
+  localStorage.setItem("haokan_layout", mode);   // 持久化上次选择
+  $("#layoutSeg").querySelectorAll("button").forEach(b=> b.classList.toggle("on", b.dataset.layout===mode));
+  const im = $("#immersive");
+  if(mode==="immersive"){
+    imSync(true);
+    im.classList.add("show"); im.setAttribute("aria-hidden","false");
+    document.documentElement.classList.add("im-open");
+  } else {
+    im.classList.remove("show"); im.setAttribute("aria-hidden","true");
+    document.documentElement.classList.remove("im-open");
+    imCancelTween();
+  }
+}
+
+// 用当前可见列表重建卡片；reset=true 时回到首张
+let _imPendingFocus = null;   // 新提炼资产到达后要居中并高亮的名称
+function imSync(reset){
+  IM.items = visible();
+  IM.n = IM.items.length;
+  imBuild();
+  if(reset) IM.pos = 0;
+  // 新资产刚入库：居中到它并触发到达高亮
+  if(_imPendingFocus){
+    const idx = IM.items.findIndex(p=>p.name===_imPendingFocus);
+    if(idx>=0){ IM.pos = idx; const el = IM.cards[idx]; if(el){ el.classList.add("arrived"); setTimeout(()=>el && el.classList.remove("arrived"), 1300); } }
+    _imPendingFocus = null;
+  }
+  IM.pos = imClamp(IM.pos, 0, Math.max(0, IM.n-1));
+  imApply();
+}
+
+function imBuild(){
+  const stage = IM.stage;
+  if(!IM.n){
+    stage.classList.add("empty");
+    stage.innerHTML = !_libLoaded
+      ? `<div class="im-empty"><h2>正在载入资产库…</h2></div>`
+      : (LIBRARY.length
+      ? `<div class="im-empty"><h2>没有匹配的资产</h2><p>切到宫格可搜索 / 筛选。</p></div>`
+      : `<div class="im-empty"><h2>资产库还是空的</h2><p>用顶部的输入框粘贴一个网址，提炼它的设计语言。</p></div>`);
+    IM.cards = [];
+    return;
+  }
+  stage.classList.remove("empty");
+  stage.innerHTML = "";
+  IM.cards = IM.items.map((p,i)=>{
+    const el = document.createElement("div");
+    el.className = "im-card";
+    const cover = p.cover ? `<div class="im-cover"><img loading="lazy" src="${p.cover}" alt=""></div>` : `<div class="im-cover empty">无封面</div>`;
+    const tags = curTags(p).slice(0,4).map(t=>`<span class="ic-tag">${esc(t)}</span>`).join("");
+    el.innerHTML = cover + `<div class="im-cap">
+        <div class="ic-head"><span class="ic-dot" style="background:${esc(p.primaryColor)}"></span><span class="ic-src">${esc(p.source)}</span></div>
+        <div class="ic-one">${esc(curOneLiner(p))}</div>
+        <div class="ic-tags">${tags}</div>
+        <div><button class="ic-open" type="button">查看详情</button><button class="ic-star ${p.favorite?"on":""}" type="button" title="收藏">${p.favorite?"★":"☆"}</button></div>
+      </div>`;
+    el.addEventListener("click",(e)=>{
+      if(IM.moved>6) return;                        // 拖拽误触保护
+      if(i!==Math.round(IM.pos)){ imGo(i); return; } // 点侧边卡片 → 居中
+      if(e.target.closest(".ic-star")){ e.stopPropagation(); imToggleFav(i); return; }
+      openDetail(p.name);                            // 点中心卡片（封面/查看详情）→ 打开详情
+    });
+    stage.appendChild(el);
+    return el;
+  });
+}
+
+// 同步执行的实际绘制（写入每张卡片的 3D transform）
+function imApply(){
+  const active = imClamp(Math.round(IM.pos), 0, Math.max(0, IM.n-1));
+  for(let i=0;i<IM.cards.length;i++){
+    const el = IM.cards[i];
+    const d = i - IM.pos, ad = Math.abs(d), sign = d<0?-1:1;
+    if(ad > 4.6){ el.style.opacity="0"; el.style.visibility="hidden"; el.style.pointerEvents="none"; el.classList.remove("center"); continue; }
+    el.style.visibility="visible"; el.style.pointerEvents="auto";
+    const coef = sign * Math.pow(ad,0.82) * 0.62;   // 水平铺开（配合 --iw）
+    const tz   = -Math.pow(ad,0.9) * 120;           // 向后推入景深
+    const ry   = -sign * Math.min(ad,1) * 52;       // 侧卡朝中心倾斜
+    const sc   = Math.max(0.62, 1 - ad*0.06);
+    const op   = Math.max(0, 1 - ad*0.16);
+    el.style.transform = `translate(-50%,-50%) translateX(calc(var(--iw) * ${coef.toFixed(4)})) translateZ(${tz.toFixed(1)}px) rotateY(${ry.toFixed(2)}deg) scale(${sc.toFixed(3)})`;
+    el.style.opacity = op.toFixed(3);
+    el.style.zIndex = String(1000 - Math.round(ad*10));
+    el.classList.toggle("center", i===active);
+    const cap = el.querySelector(".im-cap");
+    if(cap) cap.style.opacity = Math.max(0, 1 - ad*1.9).toFixed(3);
+  }
+  imUpdateBar();
+}
+// rAF 节流的绘制（滚动/拖拽用）
+function imDraw(){
+  if(IM.raf) return;
+  IM.raf = requestAnimationFrame(()=>{ IM.raf=0; imApply(); });
+}
+function imUpdateBar(){
+  const active = imClamp(Math.round(IM.pos), 0, Math.max(0, IM.n-1));
+  $("#imCount").textContent = IM.n ? `${active+1} / ${IM.n}` : "0 / 0";
+}
+
+function imCancelTween(){ if(IM.tween){ cancelAnimationFrame(IM.tween); IM.tween=0; } }
+function imSnap(){ imGo(Math.round(IM.pos)); }
+// 平滑吸附/跳转到目标整数索引
+function imGo(target){
+  if(!IM.n) return;
+  target = imClamp(target, 0, IM.n-1);
+  imCancelTween();
+  const from = IM.pos, dur = 380, t0 = performance.now();
+  const ease = (t)=> 1 - Math.pow(1-t, 3);
+  const step = (now)=>{
+    const t = Math.min(1, (now - t0)/dur);
+    IM.pos = from + (target - from)*ease(t);
+    imApply();
+    if(t < 1) IM.tween = requestAnimationFrame(step);
+    else { IM.pos = target; IM.tween = 0; imApply(); }
+  };
+  IM.tween = requestAnimationFrame(step);
+}
+async function imToggleFav(i){ const p = IM.items[i]; if(p) await toggleFav(p.name); }  // render() 会重建沉浸卡片
+
+// 沉浸模式键盘导航。用捕获阶段抢在已有的 Esc 监听之前判断：
+// 详情浮层开着时让位给它（Esc 只关详情、保留沉浸）；详情已关时 Esc 才退出沉浸。
+document.addEventListener("keydown",(e)=>{
+  if(layoutMode!=="immersive" || !$("#immersive").classList.contains("show")) return;
+  if($("#overlay").classList.contains("show")) return;   // 详情打开 → 交给已有 Esc/详情逻辑
+  if(document.activeElement === $("#imUrl")){ if(e.key==="Escape") $("#imUrl").blur(); return; } // 输入 URL 时不劫持
+  if(e.key==="ArrowRight"||e.key==="ArrowDown"){ e.preventDefault(); imGo(Math.round(IM.pos)+1); }
+  else if(e.key==="ArrowLeft"||e.key==="ArrowUp"){ e.preventDefault(); imGo(Math.round(IM.pos)-1); }
+  else if(e.key==="Enter"){ e.preventDefault(); const p=IM.items[imClamp(Math.round(IM.pos),0,Math.max(0,IM.n-1))]; if(p) openDetail(p.name); }
+  // 沉浸是主界面：Esc 不再跳宫格（用顶栏「宫格」图标切换）
+}, true);
+
+// ===== 内容语言切换（中/EN；仅切资产内容，界面文案恒为中文）=====
+function setLang(l){
+  lang = (l==="en") ? "en" : "zh";
+  localStorage.setItem("haokan_lang", lang);
+  $("#langSeg").querySelectorAll("button").forEach(b=> b.classList.toggle("on", b.dataset.lang===lang));
+  renderFilters();
+  render();  // 重渲染宫格；沉浸模式下 render() 内部会 imSync 重建卡片
+}
+function initLang(){
+  $("#langSeg").querySelectorAll("button").forEach(b=>{
+    b.classList.toggle("on", b.dataset.lang===lang);
+    b.onclick = ()=> setLang(b.dataset.lang);
+  });
+}
+
+VF.init();
+imInit();
+initLang();
 loadModel();
+setLayout(layoutMode);    // 恢复上次视图（默认沉浸）；此刻可能还没数据 → 载入态
+load();                   // 数据到达后 render() → imSync 填充卡片
 </script>
 </body>
 </html>

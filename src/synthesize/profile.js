@@ -85,7 +85,7 @@ const SYSTEM_PROMPT = `你是资深设计系统专家，专长是把优秀网页
 1. 只依据用户给出的"测量数据"进行解释和归纳，绝不臆造任何数值（颜色、字号、间距等一律以给定值为准）。
 2. 语言精炼、有主见、面向工程落地，禁止空话套话。
 3. 用中文输出 Markdown。
-4. 结尾必须附一个 \`\`\`json 代码块，包含字段：oneLiner（一句话风格定位）、aesthetic（美学流派英文关键词，如 minimal/editorial/brutalist/glassmorphic/swiss）、tags（3-6 个中文风格标签数组）。
+4. 结尾必须附一个 \`\`\`json 代码块，包含字段：oneLiner（一句话中文风格定位）、aesthetic（1-3 个**小写英文**美学流派关键词、逗号分隔，只能从固定词表中选：minimal、editorial、magazine、archive、typographic、brutalist、swiss、glassmorphic、neumorphic、skeuomorphic、flat、material、retro、modern、contemporary、futuristic、industrial、corporate、playful、elegant、luxury、technical、precision-driven、geometric、organic、maximal、monochrome、gradient、bold、clean、grid；只输出简短关键词，禁止整句、括号或大写描述，如"Swiss International Style (Dark Variant)"应写作"swiss"）、tags（3-6 个中文风格标签数组）、oneLinerEn（oneLiner 的自然、地道英文翻译，面向设计师、简洁专业，非逐字直译）、tagsEn（tags 的英文对应，数量与含义一一对应，用常见英文设计术语）。
 
 输出结构（用二级标题）：
 ## 风格定位
@@ -159,14 +159,18 @@ export async function synthesizeProfile(llm, system, meta, opts = {}) {
 
   // 解析结尾的 json 元数据块
   let tags = [];
+  let tagsEn = [];
   let oneLiner = "";
+  let oneLinerEn = "";
   let aesthetic = "";
   const blocks = [...text.matchAll(/```json\s*([\s\S]*?)```/g)];
   if (blocks.length) {
     try {
       const meta2 = JSON.parse(blocks[blocks.length - 1][1].trim());
       tags = Array.isArray(meta2.tags) ? meta2.tags : [];
+      tagsEn = Array.isArray(meta2.tagsEn) ? meta2.tagsEn.map((s) => String(s).trim()).filter(Boolean) : [];
       oneLiner = meta2.oneLiner || "";
+      oneLinerEn = meta2.oneLinerEn || "";
       // aesthetic 归一化：模型可能返回数组或逗号串，统一成去重的逗号分隔字符串，
       // 避免下游画廊把数组当单个标签、点击后筛不出任何资产。
       aesthetic = normalizeAesthetic(meta2.aesthetic);
@@ -175,5 +179,5 @@ export async function synthesizeProfile(llm, system, meta, opts = {}) {
     }
   }
 
-  return { markdown: text.trim(), tags, oneLiner, aesthetic, track: useVision ? "vision" : "structural" };
+  return { markdown: text.trim(), tags, tagsEn, oneLiner, oneLinerEn, aesthetic, track: useVision ? "vision" : "structural" };
 }

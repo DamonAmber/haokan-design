@@ -13,6 +13,7 @@
     "extract": "node src/cli.js",
     "test": "node --test",
     "lint-project": "node src/lint.js",
+    "i18n:backfill": "node src/backfill-i18n.js",
     "check:images": "node src/image-guard.js",
     "fix:images": "node src/image-guard.js --fix",
     "hooks:install": "git config core.hooksPath .githooks",
