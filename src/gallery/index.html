@@ -752,6 +752,10 @@
   .im-cap .ic-star{margin-left:8px;width:40px;height:40px;border-radius:var(--pill);border:1px solid var(--line);background:var(--glass-2);color:var(--fg);font-size:15px;cursor:pointer;transition:.15s;vertical-align:middle}
   .im-cap .ic-star:hover{background:var(--fill-2)}
   .im-cap .ic-star.on{color:#ffd60a;border-color:rgba(255,214,10,.4)}
+  .im-cap .ic-del{margin-left:8px;width:40px;height:40px;border-radius:var(--pill);border:1px solid var(--line);background:var(--glass-2);color:var(--muted);cursor:pointer;transition:.15s;vertical-align:middle;display:inline-flex;align-items:center;justify-content:center}
+  .im-cap .ic-del:hover{color:#fff;background:var(--red);border-color:var(--red)}
+  .im-cap .ic-del:active{transform:scale(.96)}
+  .im-cap .ic-del svg{width:16px;height:16px}
 
   /* 底部操作提示 */
   .im-hint{position:absolute;left:50%;bottom:22px;transform:translateX(-50%);z-index:6;display:flex;align-items:center;gap:12px;font-size:12px;color:var(--muted);background:var(--glass-2);border:1px solid var(--line);border-radius:var(--pill);padding:8px 16px;backdrop-filter:var(--blur);-webkit-backdrop-filter:var(--blur);box-shadow:var(--shadow),var(--hair);white-space:nowrap}
@@ -2572,12 +2576,13 @@ function imBuild(){
         <div class="ic-head"><span class="ic-dot" style="background:${esc(p.primaryColor)}"></span><span class="ic-src">${esc(p.source)}</span></div>
         <div class="ic-one">${esc(curOneLiner(p))}</div>
         <div class="ic-tags">${tags}</div>
-        <div><button class="ic-open" type="button">查看详情</button><button class="ic-star ${p.favorite?"on":""}" type="button" title="收藏">${p.favorite?"★":"☆"}</button></div>
+        <div><button class="ic-open" type="button">查看详情</button><button class="ic-star ${p.favorite?"on":""}" type="button" title="收藏">${p.favorite?"★":"☆"}</button><button class="ic-del" type="button" title="删除该资产" aria-label="删除该资产"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16"/><path d="M6 7l1 13a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1l1-13"/><path d="M10 11v6M14 11v6"/><path d="M9 7V4h6v3"/></svg></button></div>
       </div>`;
     el.addEventListener("click",(e)=>{
       if(IM.moved>6) return;                        // 拖拽误触保护
       if(i!==Math.round(IM.pos)){ imGo(i); return; } // 点侧边卡片 → 居中
       if(e.target.closest(".ic-star")){ e.stopPropagation(); imToggleFav(i); return; }
+      if(e.target.closest(".ic-del")){ e.stopPropagation(); imDelete(i); return; }
       openDetail(p.name);                            // 点中心卡片（封面/查看详情）→ 打开详情
     });
     stage.appendChild(el);
@@ -2636,6 +2641,18 @@ function imGo(target){
   IM.tween = requestAnimationFrame(step);
 }
 async function imToggleFav(i){ const p = IM.items[i]; if(p) await toggleFav(p.name); }  // render() 会重建沉浸卡片
+async function imDelete(i){
+  const p = IM.items[i]; if(!p) return;
+  if(!confirm(`删除资产「${p.source}」？此操作不可撤销。`)) return;
+  IM.pos = i;   // 删除后停留在同一索引（后一张顶上来）；imSync 会 clamp
+  try{
+    const r = await fetch("/api/delete",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({names:[p.name]})});
+    const j = await r.json().catch(()=>({}));
+    if(j && j.ok===false){ imToast("删除失败：" + (j.error||"未知")); return; }
+    imToast("已删除 · " + p.source);
+    await load();   // render() → imSync 重建沉浸卡片（pos 已置为 i 并 clamp）
+  }catch(e){ imToast("删除失败：" + e.message); }
+}
 
 // 沉浸模式键盘导航。用捕获阶段抢在已有的 Esc 监听之前判断：
 // 详情浮层开着时让位给它（Esc 只关详情、保留沉浸）；详情已关时 Esc 才退出沉浸。
